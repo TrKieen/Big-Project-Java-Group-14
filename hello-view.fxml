@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" prefHeight="500.0" prefWidth="700.0" spacing="20.0"
+      style="-fx-background-color: #f4f4f4;" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.logincontroller.HelloController">
+
+    <padding>
+        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
+    </padding>
+
+    <Label text="HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN" textFill="#0050ee">
+        <font>
+            <Font name="System Bold" size="28.0" />
+        </font>
+    </Label>
+
+    <Label text="Tham khảo mô hình eBay Auctions" textFill="#666666" />
+
+    <VBox alignment="CENTER" maxWidth="400.0" spacing="15.0"
+          style="-fx-background-color: white; -fx-padding: 30; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);">
+
+        <Label text="Đăng nhập tài khoản">
+            <font>
+                <Font name="System Bold" size="16.0" />
+            </font>
+        </Label>
+
+        <TextField fx:id="txtUsername" prefHeight="40.0" promptText="Tên đăng nhập hoặc Email" />
+        <PasswordField fx:id="txtPassword" prefHeight="40.0" promptText="Mật khẩu" />
+
+        <Button maxWidth="Infinity" onAction="#onLoginButtonClick" prefHeight="40.0"
+                style="-fx-background-color: #0050ee; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"
+                text="ĐĂNG NHẬP" />
+
+
+        <HBox alignment="CENTER" spacing="10">
+            <Hyperlink text="Quên mật khẩu?" />
+            <Label text="|" />
+            <Hyperlink text="Tạo tài khoản mới" />
+        </HBox>
+    </VBox>
+
+</VBox>
