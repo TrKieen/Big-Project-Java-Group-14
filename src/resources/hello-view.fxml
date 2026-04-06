@@ -7,7 +7,7 @@
 
 <VBox alignment="CENTER" prefHeight="500.0" prefWidth="700.0" spacing="20.0"
       style="-fx-background-color: #f4f4f4;" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="HelloController">
+      fx:controller="com.example.logincontroller.controller.HelloController">
 
     <padding>
         <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
@@ -36,7 +36,7 @@
         <Button maxWidth="Infinity" onAction="#onLoginButtonClick" prefHeight="40.0"
                 style="-fx-background-color: #0050ee; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"
                 text="ĐĂNG NHẬP" />
-
+        <Label fx:id="lblMessage"/>
 
         <HBox alignment="CENTER" spacing="10">
             <Hyperlink text="Quên mật khẩu?" />
@@ -44,5 +44,4 @@
             <Hyperlink text="Tạo tài khoản mới" />
         </HBox>
     </VBox>
-
 </VBox>
