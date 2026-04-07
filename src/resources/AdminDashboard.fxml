@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.logincontroller.controller.AdminDashboardController">
+
+    <top>
+        <Label text="ADMIN DASHBOARD"
+               style="-fx-font-size: 20px; -fx-padding: 10;"/>
+    </top>
+
+    <center>
+        <VBox spacing="10" alignment="CENTER">
+
+            <TableView fx:id="auctionTable" prefHeight="250">
+                <columns>
+                    <TableColumn fx:id="colId" text="Auction ID"/>
+                    <TableColumn fx:id="colStatus" text="Status"/>
+                </columns>
+            </TableView>
+
+            <HBox spacing="10" alignment="CENTER">
+                <Button text="Xem chi tiết" onAction="#handleView"/>
+                <Button text="Dừng phiên đấu giá" onAction="#handleStop"/>
+            </HBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>

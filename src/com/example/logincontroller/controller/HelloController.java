@@ -6,6 +6,11 @@ package com.example.logincontroller.controller;//
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.example.logincontroller.model.user.Admin;
+import com.example.logincontroller.model.user.Bidder;
+import com.example.logincontroller.model.user.Seller;
+import com.example.logincontroller.model.user.User;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -27,18 +32,29 @@ public class HelloController {
 
     @FXML
     protected void onLoginButtonClick() {
-        String user = this.txtUsername.getText();
-        String pass = this.txtPassword.getText();
-        if (user.equals("admin") && pass.equals("123")) {
-            this.lblMessage.setText("Đăng nhập thành công!");
-            this.lblMessage.setStyle("-fx-text-fill: green;");
-            openSellerDashboard();
+        String u = txtUsername.getText();
+        String p = txtPassword.getText();
+
+        User user = null;
+
+        if (u.equals("seller")) {
+            user = new Seller(u, "123");
+        } else if (u.equals("bidder")) {
+            user = new Bidder(u, "123");
+        } else if (u.equals("admin")) {
+            user = new Admin(u, "123");
+        }
+
+        if (user != null && user.login(p)) {
+            switch (user.getRole()) {
+                case "SELLER" -> openSellerDashboard();
+                case "BIDDER" -> openBidderDashboard();
+                case "ADMIN"  -> openAdminDashboard();
+            }
         } else {
-            this.lblMessage.setText("Sai tài khoản hoặc mật khẩu!");
-            this.lblMessage.setStyle("-fx-text-fill: red;");
+            lblMessage.setText("Sai tài khoản hoặc mật khẩu");
         }
     }
-
     private void openSellerDashboard() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/SellerDashboard.fxml"));
@@ -52,6 +68,50 @@ public class HelloController {
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Lỗi tải giao diện SellerDashboard.fxml", e);
             lblMessage.setText("Lỗi tải giao diện Dashboard!");
+        }
+    }
+    private void openBidderDashboard() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/BidderDashboard.fxml"));
+            if(loader.getLocation() == null) {
+                loader = new FXMLLoader(getClass().getResource("/resources/BidderDashboard.fxml"));
+            }
+            Parent root = loader.load();
+            Stage stage = (Stage) txtUsername.getScene().getWindow();
+            stage.setScene(new Scene(root, 900, 600));
+            stage.setTitle("Tham gia đấu giá - Bidder");
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Lỗi tải giao diện BidderDashboard.fxml", e);
+            lblMessage.setText("Lỗi tải giao diện Dashboard!");
+        }
+    }
+
+    private void openAdminDashboard() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/AdminDashboard.fxml"));
+            if(loader.getLocation() == null) {
+                loader = new FXMLLoader(getClass().getResource("/resources/AdminDashboard.fxml"));
+            }
+            Parent root = loader.load();
+            Stage stage = (Stage) txtUsername.getScene().getWindow();
+            stage.setScene(new Scene(root, 900, 600));
+            stage.setTitle("Quản trị hệ thống - Admin");
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Lỗi tải giao diện AdminDashboard.fxml", e);
+            lblMessage.setText("Lỗi tải giao diện Dashboard!");
+        }
+    }
+
+    private void openScene(String fxml, String title) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxml));
+            Parent root = loader.load();
+            Stage stage = (Stage) txtUsername.getScene().getWindow();
+            stage.setScene(new Scene(root, 900, 600));
+            stage.setTitle(title);
+        } catch (IOException e) {
+            lblMessage.setText("Không mở được giao diện!");
+            e.printStackTrace();
         }
     }
 }
