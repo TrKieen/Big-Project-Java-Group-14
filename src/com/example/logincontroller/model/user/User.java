@@ -3,8 +3,8 @@ package com.example.logincontroller.model.user;
 import com.example.logincontroller.model.Entity;
 
 public abstract class User {
-    protected String username;
-    protected String password;
+    private String username;
+    private String password;
 
     public User(String username, String password) {
         this.username = username;
@@ -14,6 +14,8 @@ public abstract class User {
     public boolean login(String inputPassword) {
         return password.equals(inputPassword);
     }
-
+    public String getUsername() {
+        return username;
+    }
     public abstract String getRole();
 }

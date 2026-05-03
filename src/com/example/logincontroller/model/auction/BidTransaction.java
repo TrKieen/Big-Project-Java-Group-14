@@ -13,4 +13,16 @@ public class BidTransaction {
         this.price = price;
         this.time = LocalDateTime.now();
     }
+
+    public Bidder getBidder() {
+        return bidder;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public LocalDateTime getTime() {
+        return time;
+    }
 }

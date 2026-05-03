@@ -1,7 +1,8 @@
 package com.example.logincontroller.network;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class ItemDTO {
+public class ItemDTO implements Serializable {
     public String id, name, description, type, extraInfo;
     public double startingPrice;
     public String startTime, endTime; // Dùng String ISO-8601 thay vì LocalDateTime để tránh lỗi thư viện JSON

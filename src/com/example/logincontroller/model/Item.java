@@ -1,7 +1,8 @@
 package com.example.logincontroller.model;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public abstract class Item extends Entity {
+public abstract class Item extends Entity implements Serializable {
     private String name, description;
     private double startingPrice, currentHighestPrice;
     private LocalDateTime startTime, endTime;
