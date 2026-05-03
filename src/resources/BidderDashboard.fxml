@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.example.logincontroller.controller.BidderDashboardController">
+            fx:controller="AuctionSystem.controller.BidderDashboardController">
 
     <top>
         <Label text="BIDDER DASHBOARD"

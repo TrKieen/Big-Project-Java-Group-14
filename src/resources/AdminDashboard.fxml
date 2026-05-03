@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.example.logincontroller.controller.AdminDashboardController">
+            fx:controller="AuctionSystem.controller.AdminDashboardController">
 
     <top>
         <Label text="ADMIN DASHBOARD"

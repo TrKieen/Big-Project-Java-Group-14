@@ -7,7 +7,7 @@
 
 <VBox alignment="CENTER" prefHeight="500.0" prefWidth="700.0" spacing="20.0"
       style="-fx-background-color: #f4f4f4;" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.logincontroller.controller.HelloController">
+      fx:controller="AuctionSystem.controller.HelloController">
 
     <padding>
         <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
@@ -19,7 +19,7 @@
         </font>
     </Label>
 
-    <Label text="Tham khảo mô hình eBay Auctions" textFill="#666666" />
+    <Label text="Dự án BTL nhóm 14" textFill="#666666" />
 
     <VBox alignment="CENTER" maxWidth="400.0" spacing="15.0"
           style="-fx-background-color: white; -fx-padding: 30; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);">
