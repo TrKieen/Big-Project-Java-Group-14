@@ -40,12 +40,16 @@ public class BidderDashboardController implements AuctionObserver {
         colName.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getItem().getName()));
         colPrice.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getItem().getCurrentHighestPrice()));
 
-        auctionList = FXCollections.observableArrayList(networkClient.sendGetAuctionsRequest());
-        itemTable.setItems(auctionList);
+        loadAuctions();
 
         itemTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             selectedAuction = newSelection;
         });
+    }
+
+    private void loadAuctions() {
+        auctionList = FXCollections.observableArrayList(networkClient.sendGetAuctionsRequest());
+        itemTable.setItems(auctionList);
 
         for (Auction auction : auctionList) {
             auction.addObserver(this);
@@ -67,6 +71,18 @@ public class BidderDashboardController implements AuctionObserver {
 
         try {
             double bidAmount = Double.parseDouble(priceInput);
+            double currentPrice = selectedAuction.getItem().getCurrentHighestPrice();
+
+            if (bidAmount <= currentPrice) {
+                showAlert("Lỗi đặt giá", "Giá bạn nhập phải cao hơn giá hiện tại!", Alert.AlertType.WARNING);
+                return;
+            }
+
+            if (selectedAuction.isClosed()) {
+                showAlert("Phiên đấu giá đã kết thúc!", "Không thể đặt giá.", Alert.AlertType.WARNING);
+                return;
+            }
+
             currentBidder.placeBid(selectedAuction, bidAmount);
             showAlert("Thành công", "Bạn đã đặt giá " + bidAmount + " thành công.", Alert.AlertType.INFORMATION);
             txtBidPrice.clear();
@@ -77,10 +93,18 @@ public class BidderDashboardController implements AuctionObserver {
         }
     }
 
+    @FXML
+    private void handleRefresh() {
+        loadAuctions();
+        showAlert("Thông báo", "Danh sách đấu giá đã được cập nhật!", Alert.AlertType.INFORMATION);
+    }
+
     @Override
     public void onAuctionUpdated(Auction auction) {
         Platform.runLater(() -> {
             itemTable.refresh();
+            System.out.println("Cập nhật đấu giá: " + auction.getItem().getName() +
+                    " - Giá mới: " + auction.getItem().getCurrentHighestPrice());
         });
     }
 
