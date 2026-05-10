@@ -1,9 +1,10 @@
 package AuctionSystem.model;
 
-import java.time.LocalDateTime;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 public class Electronics extends Item implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final int warrantyMonths;
 
     public Electronics(String id, String name, String description, double startingPrice, LocalDateTime startTime, LocalDateTime endTime, int warrantyMonths) {
@@ -11,7 +12,9 @@ public class Electronics extends Item implements Serializable {
         this.warrantyMonths = warrantyMonths;
     }
 
-    public int getWarrantyMonths() { return warrantyMonths; }
+    public int getWarrantyMonths() {
+        return warrantyMonths;
+    }
 
     @Override
     public void printInfo() {

@@ -1,7 +1,7 @@
 package AuctionSystem.model;
 
-import java.time.LocalDateTime;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 public class Vehicle extends Item implements Serializable {
     private final String licensePlate;

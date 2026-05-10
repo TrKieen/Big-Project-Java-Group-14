@@ -1,47 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.*?>
 
-<VBox alignment="CENTER" prefHeight="500.0" prefWidth="700.0" spacing="20.0"
-      style="-fx-background-color: #f4f4f4;" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="AuctionSystem.controller.HelloController">
+<StackPane prefHeight="600.0" prefWidth="900.0" style="-fx-background-color: #eae5e5;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="AuctionSystem.controller.HelloController">
+    <children>
+        <AnchorPane fx:id="mainCard" maxHeight="450.0" maxWidth="700.0" minHeight="450.0" minWidth="700.0" styleClass="main-card" stylesheets="@style.css">
+            <children>
+                <VBox alignment="CENTER" prefHeight="450.0" prefWidth="350.0" spacing="15.0">
+                    <children>
+                        <Label text="Sign In" textFill="WHITE">
+                            <font><Font name="System Bold" size="32.0" /></font>
+                        </Label>
+                        <VBox alignment="CENTER" maxWidth="260.0" spacing="10.0">
+                            <TextField fx:id="txtUsername" promptText="Username" styleClass="input-field" />
+                            <PasswordField fx:id="txtPassword" promptText="Password" styleClass="input-field" />
+                            <Label fx:id="lblMessage" alignment="CENTER" textFill="#ff4d4d" wrapText="true" />
+                            <Button onAction="#onLoginButtonClick" prefHeight="45.0" prefWidth="200.0" styleClass="main-btn" text="LOGIN" />
+                        </VBox>
+                    </children>
+                </VBox>
 
-    <padding>
-        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
-    </padding>
+                <VBox alignment="CENTER" layoutX="350.0" prefHeight="450.0" prefWidth="350.0" spacing="15.0">
+                    <children>
+                        <Label text="Create Account" textFill="WHITE">
+                            <font><Font name="System Bold" size="32.0" /></font>
+                        </Label>
+                        <VBox alignment="CENTER" maxWidth="260.0" spacing="10.0">
+                            <TextField fx:id="txtRegUsername" promptText="Username" styleClass="input-field" />
+                            <PasswordField fx:id="txtRegPassword" promptText="Password" styleClass="input-field" />
+                            <Button onAction="#onSignUpButtonClick" prefHeight="45.0" prefWidth="200.0" styleClass="main-btn" text="SIGN UP" />
+                        </VBox>
+                    </children>
+                </VBox>
 
-    <Label text="HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN" textFill="#0050ee">
-        <font>
-            <Font name="System Bold" size="28.0" />
-        </font>
-    </Label>
-
-    <Label text="Dự án BTL nhóm 14" textFill="#666666" />
-
-    <VBox alignment="CENTER" maxWidth="400.0" spacing="15.0"
-          style="-fx-background-color: white; -fx-padding: 30; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);">
-
-        <Label text="Đăng nhập tài khoản">
-            <font>
-                <Font name="System Bold" size="16.0" />
-            </font>
-        </Label>
-
-        <TextField fx:id="txtUsername" prefHeight="40.0" promptText="Tên đăng nhập hoặc Email" />
-        <PasswordField fx:id="txtPassword" prefHeight="40.0" promptText="Mật khẩu" />
-
-        <Button maxWidth="Infinity" onAction="#onLoginButtonClick" prefHeight="40.0"
-                style="-fx-background-color: #0050ee; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"
-                text="ĐĂNG NHẬP" />
-        <Label fx:id="lblMessage"/>
-
-        <HBox alignment="CENTER" spacing="10">
-            <Hyperlink text="Quên mật khẩu?" />
-            <Label text="|" />
-            <Hyperlink text="Tạo tài khoản mới" />
-        </HBox>
-    </VBox>
-</VBox>
+                <AnchorPane fx:id="overlayContainer" layoutX="350.0" prefHeight="450.0" prefWidth="350.0" styleClass="overlay-container">
+                    <children>
+                        <VBox fx:id="overlayContent" alignment="CENTER" prefHeight="450.0" prefWidth="350.0" spacing="20.0" styleClass="overlay-gradient">
+                            <children>
+                                <Label fx:id="overlayTitle" text="Hello, Friend!" textFill="WHITE">
+                                    <font><Font name="System Bold" size="28.0" /></font>
+                                </Label>
+                                <Label fx:id="overlayText" alignment="CENTER" prefWidth="250.0" text="Nhập thông tin cá nhân để bắt đầu hành trình." textAlignment="CENTER" textFill="WHITE" wrapText="true">
+                                    <font><Font size="14.0" /></font>
+                                </Label>
+                                <Button fx:id="switchBtn" onAction="#handleSwitch" prefHeight="40.0" prefWidth="150.0" styleClass="ghost-btn" text="SIGN UP" />
+                            </children>
+                        </VBox>
+                    </children>
+                </AnchorPane>
+            </children>
+        </AnchorPane>
+    </children>
+</StackPane>

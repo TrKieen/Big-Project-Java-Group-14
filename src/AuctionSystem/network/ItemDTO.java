@@ -1,3 +1,5 @@
+//dùng để đóng gói và chuyển đổi dữ liệu giữa các thành phần ứng dụng, phổ biến nhất là giữa client và server
+//giúp giảm số lần gọi hàm, tối ưu hóa băng thông, và bảo mật bằng cách chỉ chuyển thông tin cần thiết mà không bao gồm logic nghiệp vụ
 package AuctionSystem.network;
 
 import java.time.LocalDateTime;

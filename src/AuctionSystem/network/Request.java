@@ -14,6 +14,10 @@ public class Request implements Serializable {
         this.payload = payload;
     }
 
-    public String getAction() { return action; }
-    public Object getPayload() { return payload; }
+    public String getAction() {
+        return action;
+    }
+    public Object getPayload() {
+        return payload;
+    }
 }

@@ -1,0 +1,59 @@
+/* Card chính */
+.main-card {
+    -fx-background-color: #1a1a1a;
+    -fx-background-radius: 30;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 25, 0, 0, 10);
+}
+
+/* Input Fields */
+.input-field {
+    -fx-background-color: #252525;
+    -fx-text-fill: white;
+    -fx-background-radius: 12;
+    -fx-border-color: transparent;
+    -fx-padding: 12 15;
+    -fx-font-size: 14px;
+}
+
+.input-field:focused {
+    -fx-border-color: #5e43f3;
+    -fx-background-color: #2a2a2a;
+}
+
+/* Nút bấm chính */
+.main-btn {
+    -fx-background-color: #5e43f3;
+    -fx-text-fill: white;
+    -fx-background-radius: 50;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.main-btn:hover { -fx-background-color: #7058f5; }
+
+/* Overlay Container */
+.overlay-container {
+    /* Đảm bảo overlay cũng được bo góc */
+    -fx-background-radius: 0 30 30 0;
+}
+
+.overlay-gradient {
+    -fx-background-color: linear-gradient(to bottom right, #4a32cc, #5e43f3);
+    -fx-background-radius: 0 30 30 0;
+}
+
+/* Nút Ghost */
+.ghost-btn {
+    -fx-background-color: transparent;
+    -fx-border-color: white;
+    -fx-border-radius: 50;
+    -fx-border-width: 1.5;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.ghost-btn:hover {
+    -fx-background-color: white;
+    -fx-text-fill: #5e43f3;
+}

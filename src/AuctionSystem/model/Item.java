@@ -1,7 +1,7 @@
 package AuctionSystem.model;
 
-import java.time.LocalDateTime;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 public abstract class Item extends Entity implements Serializable {
     private String name, description;
@@ -18,23 +18,47 @@ public abstract class Item extends Entity implements Serializable {
         this.endTime = endTime;
     }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getDescription() {
+        return description;
+    }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public double getStartingPrice() { return startingPrice; }
-    public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }
+    public double getStartingPrice() {
+        return startingPrice;
+    }
+    public void setStartingPrice(double startingPrice) {
+        this.startingPrice = startingPrice;
+    }
 
-    public double getCurrentHighestPrice() { return currentHighestPrice; }
-    public void setCurrentHighestPrice(double currentHighestPrice) { this.currentHighestPrice = currentHighestPrice; }
+    public double getCurrentHighestPrice() {
+        return currentHighestPrice;
+    }
+    public void setCurrentHighestPrice(double currentHighestPrice) {
+        this.currentHighestPrice = currentHighestPrice;
+    }
 
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
 
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
 
     public abstract void printInfo();
 }

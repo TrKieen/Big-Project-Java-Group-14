@@ -1,5 +1,4 @@
 package AuctionSystem.model;
-
 import java.time.LocalDateTime;
 
 public class ItemFactory {
