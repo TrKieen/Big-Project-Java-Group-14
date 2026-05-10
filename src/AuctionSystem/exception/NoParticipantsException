@@ -1,4 +1,4 @@
-package AuctionSystem.exception
+package AuctionSystem.exception;
 
 public class NoParticipantsException extends RuntimeException {
     public NoParticipantsException() {
