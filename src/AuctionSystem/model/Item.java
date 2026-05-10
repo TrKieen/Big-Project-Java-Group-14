@@ -1,7 +1,9 @@
 package AuctionSystem.model;
-import java.time.LocalDateTime;
 
-public abstract class Item extends Entity {
+import java.time.LocalDateTime;
+import java.io.Serializable;
+
+public abstract class Item extends Entity implements Serializable {
     private String name, description;
     private double startingPrice, currentHighestPrice;
     private LocalDateTime startTime, endTime;

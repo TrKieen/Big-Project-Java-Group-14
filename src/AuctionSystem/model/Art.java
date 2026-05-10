@@ -1,7 +1,9 @@
 package AuctionSystem.model;
-import java.time.LocalDateTime;
 
-public class Art extends Item {
+import java.time.LocalDateTime;
+import java.io.Serializable;
+
+public class Art extends Item implements Serializable {
     private final String artistName;
 
     public Art(String id, String name, String description, double startingPrice, LocalDateTime startTime, LocalDateTime endTime, String artistName) {

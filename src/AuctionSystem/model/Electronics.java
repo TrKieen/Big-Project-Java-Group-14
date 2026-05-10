@@ -1,7 +1,9 @@
 package AuctionSystem.model;
-import java.time.LocalDateTime;
 
-public class Electronics extends Item {
+import java.time.LocalDateTime;
+import java.io.Serializable;
+
+public class Electronics extends Item implements Serializable {
     private final int warrantyMonths;
 
     public Electronics(String id, String name, String description, double startingPrice, LocalDateTime startTime, LocalDateTime endTime, int warrantyMonths) {
