@@ -1,0 +1,11 @@
+package AuctionSystem.exception;
+
+public class InvalidPriceException extends RuntimeException {
+    public InvalidPriceException() {
+        super("Giá đặt không hợp lệ. Vui lòng nhập số dương.");
+    }
+
+    public InvalidPriceException(String message) {
+        super(message);
+    }
+}
