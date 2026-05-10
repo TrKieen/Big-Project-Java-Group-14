@@ -13,12 +13,19 @@ public class Auction implements Serializable {
     private AuctionStatus status;
     private final List<Bid> bidHistory;
     private transient List<AuctionObserver> observers;
+    private boolean closed;
 
     public Auction(Item item) {
         this.item = item;
         this.status = AuctionStatus.OPEN;
         this.bidHistory = new ArrayList<>();
 
+    }
+    public boolean isClosed() {
+        return closed;
+    }
+    public void closeAuction() {
+        this.closed = true;
     }
 
     public void addObserver(AuctionObserver observer) {
