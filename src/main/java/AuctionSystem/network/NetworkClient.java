@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.*;
 import java.util.List;
 import java.util.ArrayList;
+
+import AuctionSystem.model.Item;
 import AuctionSystem.model.auction.Auction;
 
 public class NetworkClient {
@@ -63,5 +65,51 @@ public class NetworkClient {
             System.err.println("Lỗi kết nối tới Server: " + e.getMessage());
         }
         return new ArrayList<>();
+    }
+    public List<Item> sendGetAllItemsRequest() {
+        try (
+                java.net.Socket socket = new java.net.Socket(host, port);
+                java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(socket.getOutputStream());
+                java.io.ObjectInputStream ois = new java.io.ObjectInputStream(socket.getInputStream())
+        ) {
+            // Gửi request lấy toàn bộ sản phẩm lên Server
+            Request request = new Request("GET_ALL_ITEMS", null);
+            oos.writeObject(request);
+            oos.flush();
+
+            // Nhận phản hồi trả về từ Server
+            Response response = (Response) ois.readObject();
+            if ("SUCCESS".equals(response.getStatus())) {
+                // Trả về danh sách sản phẩm lấy được từ
+                return (List<Item>) response.getData();
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi kết nối tới Server khi lấy danh sách sản phẩm: " + e.getMessage());
+        }
+        return new ArrayList<>();
+    }
+    public boolean sendStopAuctionRequest(String auctionId) {
+        // Gửi Request với action là "STOP_AUCTION" và payload là ID của phiên
+        return sendRequest("STOP_AUCTION", auctionId);
+    }
+    //Gửi chuỗi data đấu giá lên Server
+    public boolean sendPlaceBidRequest(String auctionId, String bidderName, double bidAmount) {
+        String payload = auctionId + ";" + bidderName + ";" + bidAmount;
+        try (
+                Socket socket = new Socket(host, port);
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())
+        ) {
+            Request request = new Request("PLACE_BID", payload);
+            oos.writeObject(request);
+            oos.flush();
+
+            Response response = (Response) ois.readObject();
+            System.out.println("Phản hồi từ Server khi đặt giá: " + response.getMessage());
+            return "SUCCESS".equals(response.getStatus());
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Lỗi kết nối đặt giá: " + e.getMessage());
+            return false;
+        }
     }
 }

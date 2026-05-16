@@ -11,6 +11,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SellerDashboardController {
     @FXML private TableView<Item> itemTable;
@@ -91,6 +92,23 @@ public class SellerDashboardController {
                 }
             }
         });
+
+        itemTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            if (newSelection != null) {
+                selectedItem = newSelection;
+                fillFormWithItem(newSelection);
+            }
+        });
+        try {
+            List<Item> itemsOnServer = networkClient.sendGetAllItemsRequest();
+            if (itemsOnServer != null && !itemsOnServer.isEmpty()) {
+                itemList.clear();
+                itemList.addAll(itemsOnServer);
+                itemTable.refresh();
+            }
+        } catch (Exception e) {
+            System.err.println("Không thể tải sản phẩm ban đầu từ Server: " + e.getMessage());
+        }
 
         itemTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {

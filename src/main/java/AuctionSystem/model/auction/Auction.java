@@ -14,12 +14,13 @@ public class Auction implements Serializable {
     private final List<Bid> bidHistory;
     private transient List<AuctionObserver> observers;
     private boolean closed;
+    private long endTime;
 
-    public Auction(Item item) {
+    public Auction(Item item, int durationMinutes) {
         this.item = item;
         this.status = AuctionStatus.OPEN;
         this.bidHistory = new ArrayList<>();
-
+        this.endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L);
     }
     public boolean isClosed() {
         return closed;
@@ -92,5 +93,18 @@ public class Auction implements Serializable {
         }
         // Người đặt giá cao nhất là người ở cuối danh sách lịch sử
         return bidHistory.get(bidHistory.size() - 1).getBidder();
+    }
+    public String getTimeRemainingFormatted() {
+        if (status == AuctionStatus.FINISHED || status == AuctionStatus.OPEN) return "00:00:00";
+
+        long diff = endTime - System.currentTimeMillis();
+        if (diff <= 0) {
+            return "00:00:00";
+        }
+
+        long hh = (diff / (1000 * 60 * 60));
+        long mm = (diff / (1000 * 60)) % 60;
+        long ss = (diff / 1000) % 60;
+        return String.format("%02d:%02d:%02d", hh, mm, ss);
     }
 }

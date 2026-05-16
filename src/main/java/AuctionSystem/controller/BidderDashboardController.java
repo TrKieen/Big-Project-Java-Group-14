@@ -83,9 +83,24 @@ public class BidderDashboardController implements AuctionObserver {
                 return;
             }
 
-            currentBidder.placeBid(selectedAuction, bidAmount);
-            showAlert("Thành công", "Bạn đã đặt giá " + bidAmount + " thành công.", Alert.AlertType.INFORMATION);
-            txtBidPrice.clear();
+            // --- SỬA ĐOẠN NÀY: Gửi yêu cầu đặt giá lên Server thay vì làm cục bộ ---
+            boolean success = networkClient.sendPlaceBidRequest(
+                    selectedAuction.getItem().getId(),
+                    currentBidder.getUsername(), // Giả định class Bidder của bạn có hàm getUsername()
+                    bidAmount
+            );
+
+            if (success) {
+                // Cập nhật tạm thời giá trị trên giao diện người đặt cho khớp
+                selectedAuction.getItem().setCurrentHighestPrice(bidAmount);
+                itemTable.refresh();
+
+                showAlert("Thành công", "Bạn đã đặt giá " + bidAmount + " thành công.", Alert.AlertType.INFORMATION);
+                txtBidPrice.clear();
+            } else {
+                showAlert("Thất bại", "Đặt giá không thành công từ phía Server!", Alert.AlertType.ERROR);
+            }
+
         } catch (NumberFormatException e) {
             showAlert("Lỗi định dạng", "Vui lòng chỉ nhập số!", Alert.AlertType.ERROR);
         } catch (RuntimeException e) {

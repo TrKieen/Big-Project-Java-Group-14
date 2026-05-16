@@ -10,8 +10,8 @@ public class Seller extends User {
         super(username, password);
     }
 
-    public void createAuction(Item item) {
-        Auction newAuction = new Auction(item);
+    public void createAuction(Item item,int durationMinutes) {
+        Auction newAuction = new Auction(item,durationMinutes);
         AuctionManager.getInstance().addAuction(newAuction);
     }
 

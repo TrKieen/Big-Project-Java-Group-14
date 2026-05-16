@@ -43,4 +43,7 @@ public class Bid implements Serializable {
     public Bidder getBidder() {
         return bidder;
     }
+    public double getPrice(){
+        return amount;
+    }
 }

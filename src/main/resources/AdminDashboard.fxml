@@ -1,32 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="AuctionSystem.controller.AdminDashboardController">
+<BorderPane prefHeight="700.0" prefWidth="950.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/25" fx:controller="AuctionSystem.controller.AdminDashboardController">
 
     <top>
-        <Label text="ADMIN DASHBOARD"
-               style="-fx-font-size: 20px; -fx-padding: 10;"/>
+        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #2c3e50; -fx-padding: 15;">
+            <Label style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;" text="HỆ THỐNG QUẢN TRỊ ĐẤU GIÁ" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label fx:id="statusLabel" style="-fx-text-fill: #2ecc71;" text="Trạng thái: Đang kết nối" />
+        </HBox>
     </top>
 
     <center>
-        <VBox spacing="10" alignment="CENTER">
+        <VBox spacing="15" style="-fx-padding: 15;">
+            <VBox spacing="5" VBox.vgrow="SOMETIMES">
+                <Label style="-fx-font-weight: bold; -fx-font-size: 14px;" text="Danh sách các phiên đấu giá đang diễn ra" />
+                <TableView fx:id="auctionTable" prefHeight="250.0">
+                    <placeholder>
+                        <Label text="Hiện chưa có phiên đấu giá nào" />
+                    </placeholder>
+                    <columns>
+                        <TableColumn fx:id="colId" prefWidth="60" text="ID" />
+                        <TableColumn fx:id="colItemName" prefWidth="180" text="Tên Sản Phẩm" />
+                        <TableColumn fx:id="colCurrentBid" prefWidth="120" text="Giá Hiện Tại" />
+                        <TableColumn fx:id="colBidder" prefWidth="150" text="Người Dẫn Đầu" />
+                        <TableColumn fx:id="colStatus" prefWidth="120" text="Trạng Thái" />
+                        <TableColumn fx:id="colTimeLeft" prefWidth="120" text="Thời Gian" />
+                    </columns>
+                </TableView>
 
-            <TableView fx:id="auctionTable" prefHeight="250">
-                <columns>
-                    <TableColumn fx:id="colId" text="Auction ID"/>
-                    <TableColumn fx:id="colStatus" text="Status"/>
-                </columns>
-            </TableView>
+                <HBox alignment="CENTER_RIGHT" spacing="10">
+                    <Button onAction="#handleView" style="-fx-background-color: #3498db; -fx-text-fill: white;" text="Xem Chi Tiết" />
+                    <Button onAction="#handleStop" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" text="Dừng Phiên" />
+                    <Button onAction="#handleCreate" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="Tạo Phiên Mới" />
+                </HBox>
+            </VBox>
 
-            <HBox spacing="10" alignment="CENTER">
-                <Button text="Xem chi tiết" onAction="#handleView"/>
-                <Button text="Dừng phiên đấu giá" onAction="#handleStop"/>
-            </HBox>
-
+            <VBox spacing="5" VBox.vgrow="ALWAYS">
+                <Label style="-fx-font-weight: bold; -fx-font-size: 14px;" text="Line chart" />
+                <LineChart fx:id="priceChart" animated="false" title="Biến động giá sản phẩm">
+                    <xAxis>
+                        <CategoryAxis label="Thời điểm" side="BOTTOM" />
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="Giá trị (VNĐ)" side="LEFT" />
+                    </yAxis>
+                </LineChart>
+            </VBox>
         </VBox>
     </center>
+
+    <bottom>
+        <HBox style="-fx-padding: 10; -fx-background-color: #ecf0f1;">
+            <Label style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" text="Phiên bản 1.0 - LTNC 2026" />
+        </HBox>
+    </bottom>
 
 </BorderPane>

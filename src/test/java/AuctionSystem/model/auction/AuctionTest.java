@@ -19,7 +19,6 @@ public class AuctionTest {
 
     @BeforeEach
     public void setUp() {
-        // Chuẩn bị dữ liệu trước mỗi bài Test
         testItem = new Electronics("ID_TEST", "Laptop Asus", "Core i7, 16GB RAM", 1000.0,
                 LocalDateTime.now().minusHours(1), LocalDateTime.now().plusHours(1), 12);
         auction = new Auction(testItem);
