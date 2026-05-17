@@ -16,11 +16,12 @@ public class Auction implements Serializable {
     private boolean closed;
     private long endTime;
 
-    public Auction(Item item, int durationMinutes) {
+    public Auction(Item item) {
         this.item = item;
-        this.status = AuctionStatus.OPEN;
         this.bidHistory = new ArrayList<>();
-        this.endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L);
+
+        // Tự động cập nhật trạng thái dựa trên thời gian thực tế của hệ thống
+        updateStatusBasedOnTime();
     }
     public boolean isClosed() {
         return closed;
@@ -95,12 +96,20 @@ public class Auction implements Serializable {
         return bidHistory.get(bidHistory.size() - 1).getBidder();
     }
     public String getTimeRemainingFormatted() {
-        // Chỉ trả về 00:00:00 khi phiên đấu giá đã thực sự kết thúc hoàn toàn
+        // Luôn cập nhật lại trạng thái trước khi tính thời gian còn lại
+        updateStatusBasedOnTime();
+
         if (status == AuctionStatus.FINISHED) {
             return "00:00:00";
         }
 
-        long diff = endTime - System.currentTimeMillis();
+        if (status == AuctionStatus.OPEN) {
+            return "Chưa bắt đầu"; // Hoặc bạn có thể tính thời gian đếm ngược tới lúc BẮT ĐẦU
+        }
+
+        // Thời gian còn lại = Thời gian kết thúc của sản phẩm - Thời gian hiện tại
+        long end = item.getEndTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long diff = end - System.currentTimeMillis();
         if (diff <= 0) {
             return "00:00:00";
         }
@@ -109,5 +118,27 @@ public class Auction implements Serializable {
         long mm = (diff / (1000 * 60)) % 60;
         long ss = (diff / 1000) % 60;
         return String.format("%02d:%02d:%02d", hh, mm, ss);
+    }
+    public void updateStatusBasedOnTime() {
+        if (item.getStartTime() == null || item.getEndTime() == null) {
+            return; // Tránh lỗi NullPointerException nếu dữ liệu trống
+        }
+
+        long now = System.currentTimeMillis();
+
+        // ĐỔI ĐÚNG CÁCH: Chuyển LocalDateTime sang mili-giây (long) theo múi giờ hệ thống
+        long start = item.getStartTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long end = item.getEndTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+        if (now < start) {
+            this.status = AuctionStatus.OPEN;       // Chưa đến giờ đấu giá
+            this.closed = false;
+        } else if (now >= start && now <= end) {
+            this.status = AuctionStatus.RUNNING;    // Đang trong thời gian đấu giá
+            this.closed = false;
+        } else {
+            this.status = AuctionStatus.FINISHED;   // Đã quá giờ kết thúc
+            this.closed = true;
+        }
     }
 }

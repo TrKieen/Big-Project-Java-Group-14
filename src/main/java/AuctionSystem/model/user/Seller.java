@@ -10,8 +10,12 @@ public class Seller extends User {
         super(username, password);
     }
 
-    public void createAuction(Item item,int durationMinutes) {
-        Auction newAuction = new Auction(item,durationMinutes);
+    public void createAuction(Item item) {
+        Auction newAuction = new Auction(item);
+
+        // Tự động cập nhật trạng thái OPEN/RUNNING dựa trên thời gian máy tính hiện tại
+        newAuction.updateStatusBasedOnTime();
+
         AuctionManager.getInstance().addAuction(newAuction);
     }
 

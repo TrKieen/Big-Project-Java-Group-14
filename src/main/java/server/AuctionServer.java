@@ -42,7 +42,7 @@ public class AuctionServer {
 
             for (Item item : itemsFromDB) {
                 // Khởi tạo phiên đấu giá (Mặc định thời gian là 30 phút)
-                Auction auction = new Auction(item, 30);
+                Auction auction = new Auction(item);
 
                 // NẠP LẠI LỊCH SỬ ĐẶT GIÁ CŨ TỪ CLOUD (Nếu có)
                 List<AuctionSystem.model.auction.Bid> oldBids = initBidDAO.getBidHistory(item.getId());
@@ -124,18 +124,16 @@ public class AuctionServer {
                         );
                         itemDAO.addItem(item, dto.type, dto.extraInfo);
 
-                        Duration duration = Duration.between(
-                                LocalDateTime.parse(dto.startTime),
-                                LocalDateTime.parse(dto.endTime)
-                        );
-                        int durationMinutes = (int) duration.toMinutes();
+                        // =======================================================
+                        // KHẮC PHỤC: Khởi tạo Auction chuẩn theo Constructor mới (Chỉ nhận Item)
+                        // =======================================================
+                        Auction newAuction = new Auction(item);
 
-                        Auction newAuction = new Auction(item, durationMinutes);
-                        newAuction.startAuction();
+                        // Để hệ thống tự động nhận diện OPEN/RUNNING/FINISHED dựa trên startTime và endTime thực tế
+                        newAuction.updateStatusBasedOnTime();
+
                         AuctionManager.getInstance().addAuction(newAuction);
-
                         return new Response("SUCCESS", "Thêm sản phẩm thành công!", item);
-
                     case "UPDATE_ITEM":
                         ItemDTO updateDto = (ItemDTO) request.getPayload();
                         Item updateItem = ItemFactory.createItem(
