@@ -2,6 +2,9 @@ package AuctionSystem.controller;
 
 import AuctionSystem.model.auction.Bid;
 import AuctionSystem.network.NetworkClient;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.chart.*;
@@ -12,6 +15,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.util.Duration;
+
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -19,16 +24,25 @@ import java.util.Objects;
 
 public class AdminDashboardController implements AuctionObserver {
 
-    @FXML private TableView<Auction> auctionTable;
-    @FXML private TableColumn<Auction, String> colId;
-    @FXML private TableColumn<Auction, String> colItemName;
-    @FXML private TableColumn<Auction, Double> colCurrentBid;
-    @FXML private TableColumn<Auction, String> colBidder;
-    @FXML private TableColumn<Auction, String> colStatus;
-    @FXML private TableColumn<Auction, String> colTimeLeft;
+    @FXML
+    private TableView<Auction> auctionTable;
+    @FXML
+    private TableColumn<Auction, String> colId;
+    @FXML
+    private TableColumn<Auction, String> colItemName;
+    @FXML
+    private TableColumn<Auction, Double> colCurrentBid;
+    @FXML
+    private TableColumn<Auction, String> colBidder;
+    @FXML
+    private TableColumn<Auction, String> colStatus;
+    @FXML
+    private TableColumn<Auction, String> colTimeLeft;
 
-    @FXML private LineChart<String, Number> priceChart;
-    @FXML private Label statusLabel;
+    @FXML
+    private LineChart<String, Number> priceChart;
+    @FXML
+    private Label statusLabel;
 
     private final NetworkClient networkClient = new NetworkClient();
     private ObservableList<Auction> auctionList;
@@ -69,6 +83,15 @@ public class AdminDashboardController implements AuctionObserver {
         for (Auction auction : auctionList) {
             auction.addObserver(this);
         }
+        // Tạo một Timeline chạy định kỳ mỗi 1 giây để ép TableView cập nhật lại cột thời gian
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), event -> {
+                    // Lệnh này ép TableView vẽ lại giao diện dựa trên dữ liệu thời gian mới nhất
+                    auctionTable.refresh();
+                })
+        );
+        timeline.setCycleCount(Timeline.INDEFINITE); // Chạy vô hạn
+        timeline.play(); // Kích hoạt bộ đếm thời gian
     }
 
     private void updateChartForSelectedAuction(Auction auction) {

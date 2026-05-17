@@ -96,26 +96,20 @@ public class HelloController {
             return;
         }
 
-        // GỌI DATABASE ĐỂ KIỂM TRA ĐĂNG NHẬP
         User user = userDAO.checkLogin(u, p);
 
-        // Nếu thông tin đúng, chuyển đến Dashboard tương ứng với Role
         if (user != null) {
-
-            // =======================================================
-            // GIỮ NGUYÊN: Lưu thông tin người dùng vào Session toàn cục của bạn
-            // =======================================================
             UserSession.getInstance().setUsername(user.getUsername());
             UserSession.getInstance().setRole(user.getRole());
-            // =======================================================
 
-            switch (user.getRole().toUpperCase()) {
-                case "SELLER" -> openSellerDashboard();
-                case "BIDDER" -> openBidderDashboard();
-                case "ADMIN"  -> openAdminDashboard();
+            if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+                openAdminDashboard();
+            } else {
+                // TÀI KHOẢN ĐA NHIỆM: Chuyển tới màn hình trung gian chọn Chế độ làm việc
+                loadDashboard("/resources/RoleSelection.fxml", "Hệ thống Đấu giá UET - Lựa chọn chế độ");
             }
         } else {
-            lblMessage.setText("Tài khoản hoặc mật khẩu không đúng!");
+            lblMessage.setText("Tài khoản hoặc mật khẩu không chính xác!");
         }
     }
 
