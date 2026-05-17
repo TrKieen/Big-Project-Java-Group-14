@@ -35,16 +35,23 @@ public class AuctionServer {
     public void start() {
         // --- TỰ ĐỘNG ĐỌC DỮ LIỆU TỪ MYSQL KHI BẬT SERVER ---
         try {
-            System.out.println("Server: Đang tải lại sản phẩm cũ từ MySQL...");
-            List<Item> oldItems = itemDAO.getAllItems();
-            if (oldItems != null) {
-                for (Item oldItem : oldItems) {
-                    // Tạo lại phiên đấu giá (mặc định thời lượng đấu giá ví dụ là 60 phút)
-                    Auction oldAuction = new Auction(oldItem, 60);
-                    oldAuction.startAuction();
-                    AuctionManager.getInstance().addAuction(oldAuction);
+            List<Item> itemsFromDB = itemDAO.getAllItems();
+
+            // Khai báo thêm bộ nạp dữ liệu lịch sử đặt giá từ Database đám mây
+            AuctionSystem.DAO.BidDAO initBidDAO = new AuctionSystem.DAO.BidDAO();
+
+            for (Item item : itemsFromDB) {
+                // Khởi tạo phiên đấu giá (Mặc định thời gian là 30 phút)
+                Auction auction = new Auction(item, 30);
+
+                // NẠP LẠI LỊCH SỬ ĐẶT GIÁ CŨ TỪ CLOUD (Nếu có)
+                List<AuctionSystem.model.auction.Bid> oldBids = initBidDAO.getBidHistory(item.getId());
+                if (oldBids != null && !oldBids.isEmpty()) {
+                    auction.getBidHistory().addAll(oldBids);
                 }
-                System.out.println("Server: Đã phục hồi " + oldItems.size() + " sản phẩm từ Database!");
+
+                // Thêm phiên đấu giá hoàn chỉnh vào bộ quản lý Manager
+                AuctionManager.getInstance().addAuction(auction);
             }
         } catch (Exception e) {
             System.err.println("Không thể nạp dữ liệu cũ: " + e.getMessage());
@@ -159,15 +166,14 @@ public class AuctionServer {
                         List<Item> allItems = itemDAO.getAllItems();
                         return new Response("SUCCESS", "Lấy danh sách sản phẩm thành công", new ArrayList(allItems));
                     case "PLACE_BID":
-                        // Payload gửi lên có thể là một chuỗi định dạng "auctionId;bidderName;bidAmount"
-                        String bidData = (String) request.getPayload();
-                        String[] parts = bidData.split(";");
+                        String payload = (String) request.getPayload();
+                        String[] parts = payload.split(";");
                         String auctionId = parts[0];
                         String bidderName = parts[1];
                         double bidAmount = Double.parseDouble(parts[2]);
 
-                        // Tìm phiên đấu giá đang chạy trong RAM Server
-                        AuctionSystem.model.auction.Auction targetAuction = AuctionSystem.model.auction.AuctionManager.getInstance()
+                        // Tìm phiên đấu giá tương ứng trên RAM của Server
+                        Auction targetAuction = AuctionManager.getInstance()
                                 .getAuctions().stream()
                                 .filter(a -> a.getItem().getId().equals(auctionId))
                                 .findFirst()
@@ -181,11 +187,33 @@ public class AuctionServer {
                             return new Response("ERROR", "Giá đặt phải cao hơn giá hiện tại!", null);
                         }
 
-                        // 1. Cập nhật giá mới vào đối tượng RAM trên Server
+                        // 1. LƯU LƯỢT ĐẶT GIÁ VÀO DATABASE MÂY (AIVEN)
+                        // Gọi lớp DAO mà chúng ta đã viết ở bước trước để INSERT vào bảng `bids`
+                        AuctionSystem.DAO.BidDAO bidDAO = new AuctionSystem.DAO.BidDAO();
+                        boolean isSaved = bidDAO.addBid(auctionId, bidderName, bidAmount);
+
+                        if (!isSaved) {
+                            return new Response("ERROR", "Lỗi đồng bộ dữ liệu đặt giá lên cơ sở dữ liệu đám mây!", null);
+                        }
+
+                        // 2. CẬP NHẬT LẠI GIÁ TRÊN RAM SERVER & ĐỒNG BỘ LỊCH SỬ
                         targetAuction.getItem().setCurrentHighestPrice(bidAmount);
 
-                        System.out.println("Server: Người dùng " + bidderName + " đã đặt giá " + bidAmount + " cho " + targetAuction.getItem().getName());
-                        return new Response("SUCCESS", "Đặt giá thành công!", targetAuction.getItem().getCurrentHighestPrice());
+                        // Tạo đối tượng người đặt giá và lượt đặt giá mới
+                        AuctionSystem.model.user.Bidder currentBidder = new AuctionSystem.model.user.Bidder(bidderName, "");
+                        AuctionSystem.model.auction.Bid newBid = new AuctionSystem.model.auction.Bid(currentBidder, bidAmount);
+
+                        // Thêm vào danh sách lịch sử của phiên (để AdminDashboard lấy được vẽ biểu đồ)
+                        targetAuction.getBidHistory().add(newBid);
+
+                        // 3. CẬP NHẬT GIÁ CAO NHẤT VÀO BẢNG `items` TRONG DATABASE
+                        itemDAO.updateCurrentPrice(auctionId, bidAmount);
+
+                        System.out.println("Server [Cloud Sync]: " + bidderName + " đặt giá " + bidAmount + " cho " + targetAuction.getItem().getName());
+
+                        // Trả về toàn bộ đối tượng targetAuction (đã có lịch sử và người dẫn đầu mới)
+                        // để các Client/Admin nhận được và cập nhật UI ngay lập tức
+                        return new Response("SUCCESS", "Đặt giá thành công!", targetAuction);
                     default:
                         return new Response("ERROR", "Lệnh không hợp lệ!", null);
                 }

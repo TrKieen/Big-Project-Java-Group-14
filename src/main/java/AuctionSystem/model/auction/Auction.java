@@ -95,7 +95,10 @@ public class Auction implements Serializable {
         return bidHistory.get(bidHistory.size() - 1).getBidder();
     }
     public String getTimeRemainingFormatted() {
-        if (status == AuctionStatus.FINISHED || status == AuctionStatus.OPEN) return "00:00:00";
+        // Chỉ trả về 00:00:00 khi phiên đấu giá đã thực sự kết thúc hoàn toàn
+        if (status == AuctionStatus.FINISHED) {
+            return "00:00:00";
+        }
 
         long diff = endTime - System.currentTimeMillis();
         if (diff <= 0) {

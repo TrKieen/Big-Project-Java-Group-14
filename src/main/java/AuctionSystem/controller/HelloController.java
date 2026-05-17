@@ -1,9 +1,11 @@
 package AuctionSystem.controller;
 
-import AuctionSystem.model.user.Admin;
+import AuctionSystem.DAO.UserDAO;
+import AuctionSystem.DAO.UserDAOImpl;
 import AuctionSystem.model.user.Bidder;
 import AuctionSystem.model.user.Seller;
 import AuctionSystem.model.user.User;
+import AuctionSystem.model.user.UserSession;
 import javafx.animation.Interpolator;
 import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
@@ -16,6 +18,8 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.control.RadioButton; // Đã giữ lại import của bạn
+import javafx.scene.control.ToggleGroup;  // Đã giữ lại import của bạn
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -24,19 +28,25 @@ import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Controller điều khiển giao diện Đăng nhập và Đăng ký (Hello.fxml)
- */
 public class HelloController {
     private static final Logger LOGGER = Logger.getLogger(HelloController.class.getName());
 
+    // Khai báo đối tượng UserDAO để kết nối Database đám mây Aiven
+    private final UserDAO userDAO = new UserDAOImpl();
+
     // Các thành phần UI được liên kết từ file FXML qua ID (@FXML)
-    @FXML private TextField txtUsername, txtRegUsername, txtRegEmail;
+    @FXML private TextField txtUsername, txtRegUsername;
     @FXML private PasswordField txtPassword, txtRegPassword;
     @FXML private Label lblMessage, overlayTitle, overlayText;
     @FXML private AnchorPane overlayContainer; // Khối chứa hiệu ứng trượt
     @FXML private VBox overlayContent; // Nội dung bên trong khối trượt
     @FXML private Button switchBtn;
+
+    // =======================================================
+    // THÊM: Khai báo các nút vai trò tương ứng với fx:id trong FXML
+    // =======================================================
+    @FXML private RadioButton rbBidder;
+    @FXML private RadioButton rbSeller;
 
     // Biến trạng thái để kiểm tra đang ở chế độ Đăng ký hay Đăng nhập
     private boolean isSignUpMode = false;
@@ -75,26 +85,30 @@ public class HelloController {
         slide.play(); // Bắt đầu chạy animation
     }
 
-    /**
-     * Xử lý sự kiện khi nhấn nút Đăng nhập
-     */
+    //Xử lý sự kiện khi nhấn nút Đăng nhập
     @FXML
     protected void onLoginButtonClick() {
         String u = txtUsername.getText().trim();
         String p = txtPassword.getText().trim();
 
-        // Kiểm tra đăng nhập giả lập (Hardcode)
-        User user = null;
-        if (u.equals("seller") && p.equals("123")) {
-            user = new Seller("seller", "123");
-        } else if (u.equals("bidder") && p.equals("123")) {
-            user = new Bidder("bidder", "123");
-        } else if (u.equals("admin") && p.equals("123")) {
-            user = new Admin("admin", "123");
+        if (u.isEmpty() || p.isEmpty()) {
+            lblMessage.setText("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+            return;
         }
+
+        // GỌI DATABASE ĐỂ KIỂM TRA ĐĂNG NHẬP
+        User user = userDAO.checkLogin(u, p);
 
         // Nếu thông tin đúng, chuyển đến Dashboard tương ứng với Role
         if (user != null) {
+
+            // =======================================================
+            // GIỮ NGUYÊN: Lưu thông tin người dùng vào Session toàn cục của bạn
+            // =======================================================
+            UserSession.getInstance().setUsername(user.getUsername());
+            UserSession.getInstance().setRole(user.getRole());
+            // =======================================================
+
             switch (user.getRole().toUpperCase()) {
                 case "SELLER" -> openSellerDashboard();
                 case "BIDDER" -> openBidderDashboard();
@@ -106,13 +120,42 @@ public class HelloController {
     }
 
     /**
-     * Xử lý sự kiện khi nhấn nút Đăng ký
+     * Xử lý sự kiện khi nhấn nút Đăng ký (ĐÃ ĐƯỢC FIX THEO VAI TRÒ)
      */
     @FXML
     protected void onSignUpButtonClick() {
-        // Hiện tại chỉ thông báo giả lập và quay lại màn hình đăng nhập
-        lblMessage.setText("Đăng ký thành công! Mời bạn đăng nhập.");
-        handleSwitch();
+        String u = txtRegUsername.getText().trim();
+        String p = txtRegPassword.getText().trim();
+
+        // Chỉ cần kiểm tra username và password
+        if (u.isEmpty() || p.isEmpty()) {
+            lblMessage.setText("Vui lòng điền đầy đủ thông tin đăng ký!");
+            return;
+        }
+
+        // =======================================================
+        // CẬP NHẬT LOGIC: Kiểm tra nút RadioButton nào đang được chọn
+        // =======================================================
+        User newUser;
+        if (rbSeller != null && rbSeller.isSelected()) {
+            newUser = new Seller(u, p); // Khởi tạo đối tượng Seller nếu tích chọn Seller
+        } else {
+            newUser = new Bidder(u, p);  // Mặc định tạo đối tượng người mua (Bidder)
+        }
+
+        // Gửi dữ liệu lên Database thông qua userDAO
+        boolean isSuccess = userDAO.registerUser(newUser, p);
+
+        if (isSuccess) {
+            lblMessage.setText("Đăng ký thành công! Mời bạn đăng nhập.");
+            // Điền sẵn tên tài khoản vừa tạo sang ô đăng nhập để tiện sử dụng
+            txtUsername.setText(u);
+            txtPassword.clear();
+
+            handleSwitch(); // Tự động trượt về màn hình đăng nhập
+        } else {
+            lblMessage.setText("Đăng ký thất bại! Tên tài khoản đã tồn tại.");
+        }
     }
 
     // Các hàm hỗ trợ mở giao diện riêng biệt

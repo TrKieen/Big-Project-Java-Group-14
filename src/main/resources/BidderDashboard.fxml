@@ -14,10 +14,17 @@
     <center>
         <VBox spacing="10" alignment="CENTER">
 
-            <TableView fx:id="itemTable" prefHeight="250">
+            <TableView fx:id="itemTable" prefHeight="250" prefWidth="800">
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
                 <columns>
-                    <TableColumn fx:id="colName" text="Item"/>
-                    <TableColumn fx:id="colPrice" text="Giá hiện tại"/>
+                    <TableColumn fx:id="colId" text="ID" prefWidth="100"/>
+                    <TableColumn fx:id="colName" text="Tên Sản Phẩm" prefWidth="150"/>
+                    <TableColumn fx:id="colPrice" text="Giá Hiện Tại" prefWidth="120"/>
+                    <TableColumn fx:id="colHighestBidder" text="Người Dẫn Đầu" prefWidth="130"/>
+                    <TableColumn fx:id="colStatus" text="Trạng Thái" prefWidth="100"/>
+                    <TableColumn fx:id="colTime" text="Thời Gian" prefWidth="150"/>
                 </columns>
             </TableView>
 

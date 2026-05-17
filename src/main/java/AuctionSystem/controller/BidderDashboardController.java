@@ -3,7 +3,10 @@ package AuctionSystem.controller;
 import AuctionSystem.model.auction.Auction;
 import AuctionSystem.model.auction.AuctionObserver;
 import AuctionSystem.model.user.Bidder;
+import AuctionSystem.model.user.UserSession;
 import AuctionSystem.network.NetworkClient;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -14,6 +17,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.util.Duration;
 
 public class BidderDashboardController implements AuctionObserver {
     @FXML
@@ -28,6 +32,18 @@ public class BidderDashboardController implements AuctionObserver {
     @FXML
     private TextField txtBidPrice;
 
+    @FXML
+    private TableColumn<Auction, String> colId;
+
+    @FXML
+    private TableColumn<Auction, String> colHighestBidder;
+
+    @FXML
+    private TableColumn<Auction, String> colStatus;
+
+    @FXML
+    private TableColumn<Auction, String> colTime;
+
     private final NetworkClient networkClient = new NetworkClient();
     private ObservableList<Auction> auctionList;
     private Auction selectedAuction;
@@ -35,16 +51,43 @@ public class BidderDashboardController implements AuctionObserver {
 
     @FXML
     public void initialize() {
-        currentBidder = new Bidder("sinhvienUET", "123");
+        String currentUsername = UserSession.getInstance().getUsername();
+        currentBidder = new Bidder(currentUsername != null ? currentUsername : "bidder", "123");
 
+        // 1. Đổ dữ liệu ID và Tên sản phẩm từ thực thể Item
+        colId.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getItem().getId()));
         colName.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getItem().getName()));
         colPrice.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getItem().getCurrentHighestPrice()));
+
+        // 2. Cột người dẫn đầu (Fix lỗi trả về Object Bidder)
+        colHighestBidder.setCellValueFactory(cellData -> {
+            Bidder leadingBidder = cellData.getValue().getLeadingBidder();
+            // Nếu chưa có ai đặt giá thì hiển thị "Chưa có", có rồi thì lấy Username của họ
+            String bidderName = (leadingBidder != null) ? leadingBidder.getUsername() : "Chưa có";
+            return new SimpleStringProperty(bidderName);
+        });
+
+        // 3. Cột trạng thái (Fix lỗi trả về Enum AuctionStatus)
+        colStatus.setCellValueFactory(cellData -> {
+            String statusStr = cellData.getValue().getStatus().toString(); // Chuyển Enum sang String (OPEN, RUNNING, FINISHED)
+            return new SimpleStringProperty(statusStr);
+        });
+
+        // 4. Cột thời gian còn lại (Sử dụng hàm format đếm ngược có sẵn trong Auction.java)
+        colTime.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTimeRemainingFormatted()));
 
         loadAuctions();
 
         itemTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             selectedAuction = newSelection;
         });
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), event -> {
+                    itemTable.refresh(); // Ép TableView vẽ lại giao diện mỗi giây để cập nhật cột thời gian
+                })
+        );
+        timeline.setCycleCount(Timeline.INDEFINITE); // Chạy vô hạn
+        timeline.play(); // Kích hoạt bộ đếm
     }
 
     private void loadAuctions() {
