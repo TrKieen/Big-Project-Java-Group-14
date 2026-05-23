@@ -21,6 +21,18 @@
             <Label fx:id="statusLabel" style="-fx-text-fill: #2ecc71;" text="Trạng thái: Đang kết nối" />
         </HBox>
     </top>
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #2c3e50; -fx-padding: 15;">
+            <Label style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;" text="HỆ THỐNG QUẢN TRỊ ĐẤU GIÁ" />
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <HBox alignment="CENTER_RIGHT" spacing="15">
+                <Label fx:id="statusLabel" style="-fx-text-fill: #2ecc71; -fx-font-size: 14px;" text="Trạng thái: Đang kết nối" />
+                <Button onAction="#handleLogout" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 15;" text="Đăng xuất" />
+            </HBox>
+        </HBox>
+    </top>
 
     <center>
         <VBox spacing="15" style="-fx-padding: 15;">

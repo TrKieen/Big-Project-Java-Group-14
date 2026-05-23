@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AuctionServer {
-    private static final int PORT = 2514;
+    private static final int PORT = System.getenv("PORT") != null ? Integer.parseInt(System.getenv("PORT")): 2514;
 
     // Tạo pool chứa tối đa 10 luồng để xử lý 10 kết nối Client đồng thời.
     // Giúp hệ thống không bị nghẽn khi có nhiều người dùng cùng truy cập.
