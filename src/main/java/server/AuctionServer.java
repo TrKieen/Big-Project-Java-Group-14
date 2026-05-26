@@ -35,26 +35,36 @@ public class AuctionServer {
     public void start() {
         // --- TỰ ĐỘNG ĐỌC DỮ LIỆU TỪ MYSQL KHI BẬT SERVER ---
         try {
-            List<Item> itemsFromDB = itemDAO.getAllItems();
+            List<Item> savedItems = itemDAO.getAllItems();
+            List<Auction> currentAuctions = AuctionManager.getInstance().getAuctions();
 
-            // Khai báo thêm bộ nạp dữ liệu lịch sử đặt giá từ Database đám mây
-            AuctionSystem.DAO.BidDAO initBidDAO = new AuctionSystem.DAO.BidDAO();
+            // >>> BỔ SUNG: Khởi tạo lớp BidDAO để load lịch sử từ DB lên RAM Server <<<
+            AuctionSystem.DAO.BidDAO bidDAO = new AuctionSystem.DAO.BidDAO();
 
-            for (Item item : itemsFromDB) {
-                // Khởi tạo phiên đấu giá (Mặc định thời gian là 30 phút)
-                Auction auction = new Auction(item);
+            for (Item item : savedItems) {
+                boolean isAlreadyLoaded = currentAuctions.stream()
+                        .anyMatch(a -> a.getItem().getId().equals(item.getId()));
 
-                // NẠP LẠI LỊCH SỬ ĐẶT GIÁ CŨ TỪ CLOUD (Nếu có)
-                List<AuctionSystem.model.auction.Bid> oldBids = initBidDAO.getBidHistory(item.getId());
-                if (oldBids != null && !oldBids.isEmpty()) {
-                    auction.getBidHistory().addAll(oldBids);
+                if (!isAlreadyLoaded) {
+                    Auction auction = new Auction(item);
+
+                    // >>> BỔ SUNG: Gọi hàm nạp lịch sử các lượt đặt giá cũ vào phiên đấu giá <<<
+                    try {
+                        // Bạn kiểm tra trong lớp BidDAO của bạn xem tên hàm là gì nhé, thông thường là:
+                        List<AuctionSystem.model.auction.Bid> oldBids = bidDAO.getBidHistory(item.getId());
+                        if (oldBids != null) {
+                            auction.getBidHistory().addAll(oldBids);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Chưa nạp được lịch sử bids cũ của sản phẩm: " + item.getId());
+                    }
+
+                    currentAuctions.add(auction);
                 }
-
-                // Thêm phiên đấu giá hoàn chỉnh vào bộ quản lý Manager
-                AuctionManager.getInstance().addAuction(auction);
             }
+            System.out.println("Server [MySQL]: Đã đồng bộ thành công " + currentAuctions.size() + " phiên đấu giá kèm lịch sử.");
         } catch (Exception e) {
-            System.err.println("Không thể nạp dữ liệu cũ: " + e.getMessage());
+            System.err.println("Lỗi nạp dữ liệu MySQL khi khởi động: " + e.getMessage());
         }
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -146,11 +156,71 @@ public class AuctionServer {
                         } else {
                             return new Response("ERROR", "Không tìm thấy sản phẩm cần cập nhật!", null);
                         }
+                    case "REGISTER_AUTO_BID":
+                        String autoPayload = (String) request.getPayload();
+                        // Định dạng chuỗi nhận từ NetworkClient: auctionId;bidderName;maxBid;increment
+                        String[] autoParts = autoPayload.split(";");
+                        String autoAuctionId = autoParts[0];
+                        String autoBidderName = autoParts[1];
+                        double maxBid = Double.parseDouble(autoParts[2]);
+                        double increment = Double.parseDouble(autoParts[3]);
+
+                        // Kiểm tra xem phiên đấu giá đó có tồn tại không
+                        Auction autoTarget = AuctionManager.getInstance()
+                                .getAuctions().stream()
+                                .filter(a -> a.getItem().getId().equals(autoAuctionId))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (autoTarget == null || autoTarget.isClosed()) {
+                            return new Response("ERROR", "Phiên đấu giá không tồn tại hoặc đã kết thúc!", null);
+                        }
+
+                        // Lưu cấu hình vào danh sách hệ thống
+                        autoBidList.add(new AutoBidConfig(autoAuctionId, autoBidderName, maxBid, increment));
+                        System.out.println("Server [Auto-Bid]: " + autoBidderName + " đã đăng ký Auto-Bid cho SP " + autoAuctionId + " (Max: " + maxBid + ")");
+
+                        // Kích hoạt chạy thử Auto-Bid ngay lập tức phòng trường hợp người đăng ký sau giá hiện tại
+                        checkAndTriggerAutoBids(autoTarget);
+
+                        return new Response("SUCCESS", "Đăng ký Auto-Bid thành công!", null);
+                    case "STOP_AUCTION":
+                        // 1. Nhận chuỗi ID từ Payload một cách an toàn
+                        String stopAuctionId = String.valueOf(request.getPayload());
+
+                        // 2. Tìm phiên đấu giá tương ứng trên RAM Server bằng .equals()
+                        Auction auctionToStop = AuctionManager.getInstance()
+                                .getAuctions().stream()
+                                .filter(a -> a.getItem().getId().equals(stopAuctionId))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (auctionToStop == null) {
+                            return new Response("ERROR", "Không tìm thấy phiên đấu giá cần dừng!", null);
+                        }
+
+                        // 3. GỌI HÀM CÓ SẴN: Đổi trạng thái sang FINISHED & kích hoạt Observer cập nhật giao diện công khai
+                        auctionToStop.finishAuction();
+
+                        // Đồng thời set thuộc tính closed của bạn thành true
+                        auctionToStop.closeAuction();
+
+                        // 4. CẬP NHẬT DATABASE: Cập nhật giá cao nhất hiện tại hoặc trạng thái nếu cần
+                        // itemDAO.updateCurrentPrice(stopAuctionId, auctionToStop.getItem().getCurrentHighestPrice());
+
+                        System.out.println("Server [Action]: Admin đã ép dừng thủ công phiên đấu giá: " + stopAuctionId);
+
+                        // Trả về thành công kèm đối tượng auction đã cập nhật trạng thái mới
+                        return new Response("SUCCESS", "Đã dừng phiên đấu giá thành công!", auctionToStop);
 
                     case "DELETE_ITEM":
                         String id = (String) request.getPayload();
+                        // 1. Xóa trong Database MySQL
                         boolean isDeleted = itemDAO.deleteItem(id);
+
                         if (isDeleted) {
+                            // 2. PHẢI XÓA THÊM: Loại bỏ phiên đấu giá này khỏi bộ nhớ RAM của Server
+                            AuctionManager.getInstance().getAuctions().removeIf(a -> a.getItem().getId().equals(id));
                             return new Response("SUCCESS", "Xóa sản phẩm thành công!", null);
                         } else {
                             return new Response("ERROR", "Không tìm thấy sản phẩm để xóa!", null);
@@ -206,6 +276,7 @@ public class AuctionServer {
 
                         // 3. CẬP NHẬT GIÁ CAO NHẤT VÀO BẢNG `items` TRONG DATABASE
                         itemDAO.updateCurrentPrice(auctionId, bidAmount);
+                        checkAndTriggerAutoBids(targetAuction);
 
                         System.out.println("Server [Cloud Sync]: " + bidderName + " đặt giá " + bidAmount + " cho " + targetAuction.getItem().getName());
 
@@ -220,6 +291,72 @@ public class AuctionServer {
             }
         }
     }
+    private static class AutoBidConfig {
+        String auctionId;
+        String bidderName;
+        double maxBid;
+        double increment;
+
+        public AutoBidConfig(String auctionId, String bidderName, double maxBid, double increment) {
+            this.auctionId = auctionId;
+            this.bidderName = bidderName;
+            this.maxBid = maxBid;
+            this.increment = increment;
+        }
+    }
+    private void checkAndTriggerAutoBids(Auction auction) {
+        String auctionId = auction.getItem().getId();
+        boolean bidPlaced;
+
+        // Vòng lặp do-while đảm bảo nếu có nhiều người cùng cài Auto-Bid, họ sẽ tự động "đấu" với nhau cho tới giới hạn
+        do {
+            bidPlaced = false;
+            double currentPrice = auction.getItem().getCurrentHighestPrice();
+            String currentLeader = auction.getLeadingBidder() != null ? auction.getLeadingBidder().getUsername() : "";
+
+            for (AutoBidConfig config : autoBidList) {
+                // Điều kiện kích hoạt: Đúng sản phẩm, người này chưa phải dẫn đầu, và giá hiện tại vẫn dưới mức tối đa của họ
+                if (config.auctionId.equals(auctionId) && !config.bidderName.equals(currentLeader) && currentPrice < config.maxBid) {
+
+                    // Tính mức giá mới = Giá hiện tại + Bước giá đặt trước
+                    double nextBid = currentPrice + config.increment;
+
+                    // Nếu vượt quá maxBid thì lấy thẳng mức maxBid làm lượt cuối
+                    if (nextBid > config.maxBid) {
+                        nextBid = config.maxBid;
+                    }
+
+                    // Nếu giá mới tính toán vẫn hợp lệ (lớn hơn giá cao nhất hiện tại)
+                    if (nextBid > currentPrice) {
+                        try {
+                            // 1. Đồng bộ lên Database đám mây
+                            AuctionSystem.DAO.BidDAO bidDAO = new AuctionSystem.DAO.BidDAO();
+                            bidDAO.addBid(auctionId, config.bidderName, nextBid);
+
+                            // 2. Cập nhật lại trên RAM Server
+                            auction.getItem().setCurrentHighestPrice(nextBid);
+                            AuctionSystem.model.user.Bidder autoBidder = new AuctionSystem.model.user.Bidder(config.bidderName, "");
+                            AuctionSystem.model.auction.Bid newAutoBid = new AuctionSystem.model.auction.Bid(autoBidder, nextBid);
+                            auction.getBidHistory().add(newAutoBid);
+
+                            // 3. Cập nhật giá sản phẩm vào DB
+                            itemDAO.updateCurrentPrice(auctionId, nextBid);
+
+                            System.out.println("Server [Auto-Bid Kích Hoạt]: Hệ thống tự đặt " + nextBid + " cho " + config.bidderName);
+
+                            bidPlaced = true; // Đánh dấu là vừa có lượt đặt giá tự động thành công
+                            break; // Thoát vòng lặp for để nạp lại trạng thái giá mới nhất cho lượt quét kế tiếp
+                        } catch (Exception e) {
+                            System.err.println("Lỗi thực hiện Auto-Bid: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+        } while (bidPlaced); // Tiếp tục nếu vẫn còn lượt nâng giá tự động hợp lệ
+    }
+
+    // Danh sách chứa tất cả cấu hình Auto-Bid đang chạy trên Server
+    private static final List<AutoBidConfig> autoBidList = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     public static void main(String[] args) {
         new AuctionServer().start();

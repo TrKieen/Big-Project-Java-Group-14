@@ -2,10 +2,15 @@ package AuctionSystem.controller;
 
 import AuctionSystem.model.auction.Bid;
 import AuctionSystem.network.NetworkClient;
-import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import javafx.fxml.FXMLLoader;
+import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.chart.*;
 import AuctionSystem.model.auction.Auction;
@@ -17,10 +22,11 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.util.Duration;
 
-import java.time.LocalTime;
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class AdminDashboardController implements AuctionObserver {
 
@@ -51,6 +57,9 @@ public class AdminDashboardController implements AuctionObserver {
     private final XYChart.Series<String, Number> priceSeries = new XYChart.Series<>();
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
+    // Đổi biến timeline thành biến toàn cục của class để hàm logout có thể tiếp cận và dừng nó lại
+    private Timeline timeline;
+
     @FXML
     public void initialize() {
         // 1. Đồng bộ các cột TableView với Model
@@ -66,6 +75,9 @@ public class AdminDashboardController implements AuctionObserver {
         // 2. Khởi tạo danh sách và dữ liệu mạng
         auctionList = FXCollections.observableArrayList(networkClient.sendGetAuctionsRequest());
         auctionTable.setItems(auctionList);
+
+        // Dòng code ép dãn khít các cột chuẩn xác bằng mã Java
+        auctionTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         // 3. Thiết lập biểu đồ
         priceSeries.setName("Biến động giá");
@@ -83,8 +95,9 @@ public class AdminDashboardController implements AuctionObserver {
         for (Auction auction : auctionList) {
             auction.addObserver(this);
         }
+
         // Tạo một Timeline chạy định kỳ mỗi 1 giây để ép TableView cập nhật lại cột thời gian
-        Timeline timeline = new Timeline(
+        timeline = new Timeline(
                 new KeyFrame(Duration.seconds(1), event -> {
                     // Lệnh này ép TableView vẽ lại giao diện dựa trên dữ liệu thời gian mới nhất
                     auctionTable.refresh();
@@ -95,14 +108,27 @@ public class AdminDashboardController implements AuctionObserver {
     }
 
     private void updateChartForSelectedAuction(Auction auction) {
+        // 1. Dọn sạch các điểm dữ liệu cũ trên đường biểu đồ
         priceSeries.getData().clear();
-        List<Bid> history = auction.getBidHistory();
 
-        // Giả sử mỗi Bid có hàm getTime() trả về LocalTime hoặc chuỗi thời gian.
-        // Nếu không có, bạn có thể tạm thời dùng "Lượt " + (i + 1) nhưng nhớ sửa cả hàm onAuctionUpdated bên dưới nhé.
-        for (int i = 0; i < history.size(); i++) {
-            String label = "Lượt " + (i + 1);
-            priceSeries.getData().add(new XYChart.Data<>(label, history.get(i).getPrice()));
+        // 2. Ép trục X (CategoryAxis) xóa sạch các nhãn "Lượt X" cũ của sản phẩm trước đó
+        if (priceChart.getXAxis() instanceof CategoryAxis) {
+            ((CategoryAxis) priceChart.getXAxis()).getCategories().clear();
+        }
+
+        // 3. THÊM ĐIỂM TRÊN TRỤC OY: Đặt tên nhãn trục Ox là "0" hoặc "" (chuỗi rỗng) hoặc "Bắt đầu"
+        double startPrice = auction.getItem().getStartingPrice();
+        priceSeries.getData().add(new XYChart.Data<>("Giá ban đầu", startPrice));
+
+        // 4. Nạp tiếp lịch sử đấu giá (nếu có) vào sau điểm gốc
+        List<Bid> history = auction.getBidHistory();
+        if (history != null && !history.isEmpty()) {
+            // Giới hạn hiển thị thêm tối đa 19 lượt để tổng số điểm trên đồ thị không quá 20
+            int startIndex = Math.max(0, history.size() - 19);
+            for (int i = startIndex; i < history.size(); i++) {
+                String label = "Lượt " + (i + 1);
+                priceSeries.getData().add(new XYChart.Data<>(label, history.get(i).getPrice()));
+            }
         }
         statusLabel.setText("Đang theo dõi: " + auction.getItem().getName());
     }
@@ -129,14 +155,64 @@ public class AdminDashboardController implements AuctionObserver {
         if (selectedAuction != null) {
             boolean success = networkClient.sendStopAuctionRequest(String.valueOf(selectedAuction.getItem().getId()));
             if (success) {
-                statusLabel.setText("Thông báo: Đã gửi lệnh dừng phiên " + selectedAuction.getItem().getId());
+                statusLabel.setText("Thông báo: Đã dừng phiên thành công " + selectedAuction.getItem().getId());
+
+                // Mẹo nhỏ: Đồng bộ luôn thời gian kết thúc của item về quá khứ (vừa khít hiện tại)
+                // để hàm tự động updateStatusBasedOnTime() không bao giờ chuyển nó ngược lại thành RUNNING nữa.
+                selectedAuction.getItem().setEndTime(java.time.LocalDateTime.now().minusSeconds(1));
+
+                // Gọi hàm cập nhật trạng thái ngay lập tức trên giao diện địa phương
+                selectedAuction.finishAuction();
+                selectedAuction.closeAuction();
+
+                // Làm mới bảng hiển thị
+                auctionTable.refresh();
+            } else {
+                statusLabel.setText("Thông báo: Lỗi hệ thống, không thể dừng phiên!");
             }
         }
     }
 
     @FXML
-    private void handleCreate() {
-        System.out.println("Mở màn hình tạo phiên mới...");
+    private void handleLogout(ActionEvent event) {
+        // 1. Hộp thoại xác nhận đăng xuất từ hệ thống
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Xác nhận đăng xuất");
+        alert.setHeaderText(null);
+        alert.setContentText("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống quản trị?");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+
+            // 2. Bắt buộc phải dừng timeline chạy ngầm để tránh lỗi xung đột luồng giao diện JavaFX khi đổi Scene
+            if (timeline != null) {
+                timeline.stop();
+            }
+
+            try {
+                // 3. Gọi file hello-view.fxml (màn hình Đăng nhập) từ gốc thư mục tài nguyên (resources)
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/hello-view.fxml"));
+                Parent root = loader.load();
+
+                // 4. Lấy Stage hiện tại từ chính phần tử nút bấm kích hoạt ActionEvent này
+                Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+                // 5. Cài đặt Scene đăng nhập mới và căn giữa lại trên màn hình máy tính
+                currentStage.setScene(new Scene(root));
+                currentStage.setTitle("Đăng nhập hệ thống");
+                if (currentStage.isMaximized()) {
+                    currentStage.setMaximized(false);
+                    currentStage.setMaximized(true);
+                } else {
+                    currentStage.setMaximized(true);
+                }
+                currentStage.centerOnScreen();
+                currentStage.show();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -151,7 +227,6 @@ public class AdminDashboardController implements AuctionObserver {
             }
 
             // 2. Ép bảng làm mới lập tức -> Cột "Người dẫn đầu" (colBidder) sẽ tự động hiển thị tên
-            // vì hàm getLeadingBidder() trong file Auction.java của bạn đọc từ phần tử cuối của bidHistory!
             auctionTable.refresh();
 
             // 3. Nếu Admin đang click chọn xem đúng sản phẩm vừa có người đặt giá này -> Vẽ tiếp điểm lên biểu đồ
@@ -160,10 +235,7 @@ public class AdminDashboardController implements AuctionObserver {
 
                 List<Bid> history = auction.getBidHistory();
                 if (!history.isEmpty()) {
-                    // Nhãn hiển thị trục X (Ví dụ: Lượt 1, Lượt 2, Lượt 3...)
                     String labelNow = "Lượt " + history.size();
-
-                    // Lấy số tiền cao nhất vừa đặt (Khớp với hàm getCurrentHighestPrice() của Item)
                     double currentPrice = auction.getItem().getCurrentHighestPrice();
 
                     // Thêm điểm đồ thị mới vào biểu đồ đường

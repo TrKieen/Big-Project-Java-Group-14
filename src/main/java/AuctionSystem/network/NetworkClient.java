@@ -89,8 +89,42 @@ public class NetworkClient {
         return new ArrayList<>();
     }
     public boolean sendStopAuctionRequest(String auctionId) {
-        // Gửi Request với action là "STOP_AUCTION" và payload là ID của phiên
-        return sendRequest("STOP_AUCTION", auctionId);
+        try (
+                Socket socket = new Socket(host, port);
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())
+        ) {
+            Request request = new Request("STOP_AUCTION", auctionId);
+            oos.writeObject(request);
+            oos.flush();
+
+            Response response = (Response) ois.readObject();
+            System.out.println("Phản hồi từ Server khi dừng phiên: " + response.getMessage());
+            return "SUCCESS".equals(response.getStatus());
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Lỗi kết nối khi dừng phiên: " + e.getMessage());
+            return false;
+        }
+    }
+    // Thêm mới phương thức này vào cuối file NetworkClient.java để phục vụ tính năng Auto-Bid
+    public boolean sendRegisterAutoBidRequest(String auctionId, String bidderName, double maxBid, double increment) {
+        String payload = auctionId + ";" + bidderName + ";" + maxBid + ";" + increment;
+        try (
+                Socket socket = new Socket(host, port);
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())
+        ) {
+            Request request = new Request("REGISTER_AUTO_BID", payload);
+            oos.writeObject(request);
+            oos.flush();
+
+            Response response = (Response) ois.readObject();
+            System.out.println("Phản hồi từ Server khi đăng ký Auto-Bid: " + response.getMessage());
+            return "SUCCESS".equals(response.getStatus());
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Lỗi kết nối đăng ký Auto-Bid: " + e.getMessage());
+            return false;
+        }
     }
     //Gửi chuỗi data đấu giá lên Server
     public boolean sendPlaceBidRequest(String auctionId, String bidderName, double bidAmount) {
