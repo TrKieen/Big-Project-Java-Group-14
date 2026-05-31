@@ -206,9 +206,12 @@ public class AuctionServer {
                         }
 
                         // 3. GỌI HÀM CÓ SẴN: Đổi trạng thái sang FINISHED & kích hoạt Observer cập nhật giao diện công khai
-                        auctionToStop.finishAuction();
+                        if (auctionToStop.getItem() != null) {
+                            auctionToStop.getItem().setEndTime(java.time.LocalDateTime.now().minusSeconds(1));
+                        }
 
                         // Đồng thời set thuộc tính closed của bạn thành true
+                        auctionToStop.finishAuction();
                         auctionToStop.closeAuction();
 
                         // 4. CẬP NHẬT DATABASE: Cập nhật giá cao nhất hiện tại hoặc trạng thái nếu cần

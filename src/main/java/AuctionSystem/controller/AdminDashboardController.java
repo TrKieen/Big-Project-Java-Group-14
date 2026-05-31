@@ -23,7 +23,6 @@ import javafx.collections.ObservableList;
 import javafx.util.Duration;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,7 +57,6 @@ public class AdminDashboardController implements AuctionObserver {
     private Auction selectedAuction;
 
     private final XYChart.Series<String, Number> priceSeries = new XYChart.Series<>();
-    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private Timeline timeline;
     private ScheduledExecutorService autoRefreshScheduler;

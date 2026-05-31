@@ -274,4 +274,36 @@ public class SellerDashboardController {
     private void showAlert(Alert.AlertType type, String title, String content) {
         Alert alert = new Alert(type); alert.setTitle(title); alert.setHeaderText(null); alert.setContentText(content); alert.showAndWait();
     }
+
+    @FXML
+    private void handleLogout(javafx.event.ActionEvent event) {
+        // 1. Hiện hộp thoại hỏi lại cho chắc chắn
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Xác nhận đăng xuất");
+        alert.setHeaderText(null);
+        alert.setContentText("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống Seller?");
+
+        java.util.Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            try {
+                // Tải lại giao diện màn hình Đăng nhập (hello-view.fxml)
+                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/hello-view.fxml"));
+                javafx.scene.Parent root = loader.load();
+
+                // Lấy Stage (cửa sổ) hiện tại từ nút bấm vừa click
+                javafx.stage.Stage currentStage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+
+                // Đổi Scene và ĐỔI LẠI TIÊU ĐỀ cửa sổ về màn hình đăng nhập
+                currentStage.setScene(new javafx.scene.Scene(root));
+                currentStage.setTitle("Đăng nhập hệ thống");
+
+                currentStage.centerOnScreen();
+                currentStage.show();
+
+            } catch (java.io.IOException e) {
+                System.err.println("Lỗi khi chuyển màn hình đăng xuất: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
 }

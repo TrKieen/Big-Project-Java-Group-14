@@ -127,8 +127,6 @@ public class HelloController {
         }
     }
 
-    private void openSellerDashboard() { loadDashboard("/resources/SellerDashboard.fxml", "Seller Dashboard"); }
-    private void openBidderDashboard() { loadDashboard("/resources/BidderDashboard.fxml", "Bidder Dashboard"); }
     private void openAdminDashboard() { loadDashboard("/resources/AdminDashboard.fxml", "Admin Dashboard"); }
 
     private void loadDashboard(String fxmlPath, String title) {
