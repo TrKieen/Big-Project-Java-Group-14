@@ -1,36 +1,44 @@
 package AuctionSystem.model.auction;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AuctionManager {
 
-    private static AuctionManager instance;
+    // ✅ volatile đảm bảo visibility đa luồng
+    private static volatile AuctionManager instance;
 
-    private final List<Auction> auctions;
+    // ✅ CopyOnWriteArrayList: thread-safe khi đọc đồng thời (nhiều ClientHandler)
+    private final List<Auction> auctions = new CopyOnWriteArrayList<>();
 
     private AuctionManager() {
-        auctions = new ArrayList<>();
     }
 
+    // ✅ Double-checked locking – Singleton chuẩn thread-safe
     public static AuctionManager getInstance() {
         if (instance == null) {
-            instance = new AuctionManager();
+            synchronized (AuctionManager.class) {
+                if (instance == null) {
+                    instance = new AuctionManager();
+                }
+            }
         }
         return instance;
     }
 
-    public void addAuction(Auction auction) {
+    // ✅ synchronized để tránh race condition khi 2 Client gửi ADD cùng lúc
+    public synchronized void addAuction(Auction auction) {
         auctions.add(auction);
-        System.out.println("Đã thêm phiên đấu giá cho sản phẩm: " + auction.getItem().getDescription());
+        System.out.println("Đã thêm phiên đấu giá cho sản phẩm: " + auction.getItem().getName());
     }
 
     public List<Auction> getAuctions() {
         return auctions;
     }
 
-    public void closeAuction(Auction auction) {
+    // ✅ synchronized để tránh đóng phiên trùng nhau
+    public synchronized void closeAuction(Auction auction) {
         auction.finishAuction();
-        System.out.println("Phiên đấu giá cho sản phẩm " + auction.getItem().getDescription() + " đã kết thúc.");
+        System.out.println("Phiên đấu giá cho sản phẩm " + auction.getItem().getName() + " đã kết thúc.");
     }
 }

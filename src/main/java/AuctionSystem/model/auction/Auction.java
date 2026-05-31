@@ -4,24 +4,38 @@ import AuctionSystem.exception.AuctionClosedException;
 import AuctionSystem.exception.InvalidBidException;
 import AuctionSystem.model.Item;
 import AuctionSystem.model.user.Bidder;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Auction implements Serializable {
     private final Item item;
     private AuctionStatus status;
+    // ✅ CopyOnWriteArrayList: thread-safe, nhiều thread đọc đồng thời không cần lock
     private final List<Bid> bidHistory;
-    private transient List<AuctionObserver> observers;
+    // ✅ Bỏ transient – observers cần tồn tại sau deserialize để Observer pattern hoạt động
+    private List<AuctionObserver> observers;
     private boolean closed;
     private long endTime;
 
     public Auction(Item item) {
         this.item = item;
-        this.bidHistory = new ArrayList<>();
-
+        // ✅ CopyOnWriteArrayList cho phép nhiều thread đọc lịch sử đồng thời an toàn
+        this.bidHistory = new CopyOnWriteArrayList<>();
+        this.observers = new ArrayList<>();
         // Tự động cập nhật trạng thái dựa trên thời gian thực tế của hệ thống
         updateStatusBasedOnTime();
+    }
+
+    // ✅ Khôi phục observers sau khi object được deserialize qua mạng TCP
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        if (observers == null) {
+            observers = new ArrayList<>();
+        }
     }
     public boolean isClosed() {
         return closed;

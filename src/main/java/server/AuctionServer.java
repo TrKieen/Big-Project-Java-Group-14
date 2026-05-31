@@ -15,15 +15,19 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AuctionServer {
-    private static final int PORT = 2514;
+    private static final int PORT = System.getenv("PORT") != null
+            ? Integer.parseInt(System.getenv("PORT")) : 2514;
+
+    private static final DateTimeFormatter DT_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // Tạo pool chứa tối đa 10 luồng để xử lý 10 kết nối Client đồng thời.
     // Giúp hệ thống không bị nghẽn khi có nhiều người dùng cùng truy cập.
@@ -130,13 +134,12 @@ public class AuctionServer {
                         ItemDTO dto = (ItemDTO) request.getPayload();
                         Item item = ItemFactory.createItem(
                                 dto.type, dto.id, dto.name, dto.description, dto.startingPrice,
-                                LocalDateTime.parse(dto.startTime), LocalDateTime.parse(dto.endTime), dto.extraInfo
+                                LocalDateTime.parse(dto.startTime, DT_FMT),
+                                LocalDateTime.parse(dto.endTime, DT_FMT),
+                                dto.extraInfo
                         );
                         itemDAO.addItem(item, dto.type, dto.extraInfo);
 
-                        // =======================================================
-                        // KHẮC PHỤC: Khởi tạo Auction chuẩn theo Constructor mới (Chỉ nhận Item)
-                        // =======================================================
                         Auction newAuction = new Auction(item);
 
                         // Để hệ thống tự động nhận diện OPEN/RUNNING/FINISHED dựa trên startTime và endTime thực tế
@@ -147,8 +150,11 @@ public class AuctionServer {
                     case "UPDATE_ITEM":
                         ItemDTO updateDto = (ItemDTO) request.getPayload();
                         Item updateItem = ItemFactory.createItem(
-                                updateDto.type, updateDto.id, updateDto.name, updateDto.description, updateDto.startingPrice,
-                                LocalDateTime.parse(updateDto.startTime), LocalDateTime.parse(updateDto.endTime), updateDto.extraInfo
+                                updateDto.type, updateDto.id, updateDto.name, updateDto.description,
+                                updateDto.startingPrice,
+                                LocalDateTime.parse(updateDto.startTime, DT_FMT),
+                                LocalDateTime.parse(updateDto.endTime, DT_FMT),
+                                updateDto.extraInfo
                         );
                         boolean isUpdated = itemDAO.updateItem(updateItem, updateDto.type, updateDto.extraInfo);
                         if (isUpdated) {
@@ -228,6 +234,7 @@ public class AuctionServer {
 
                     case "GET_ALL_AUCTIONS":
                         List<Auction> auctions = AuctionManager.getInstance().getAuctions();
+                        auctions.forEach(Auction::updateStatusBasedOnTime);
                         return new Response("SUCCESS", "Lấy danh sách thành công", auctions);
                     case "GET_ALL_ITEMS":
                         // Lấy toàn bộ danh sách sản phẩm từ MySQL thông qua DAO

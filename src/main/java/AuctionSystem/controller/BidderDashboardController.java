@@ -28,6 +28,9 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class BidderDashboardController implements AuctionObserver {
 
@@ -65,6 +68,7 @@ public class BidderDashboardController implements AuctionObserver {
     private XYChart.Series<String, Number> activeSeries;
 
     private Timeline countdownTimeline;
+    private ScheduledExecutorService autoRefreshScheduler;
 
     @FXML
     public void initialize() {
@@ -104,6 +108,51 @@ public class BidderDashboardController implements AuctionObserver {
                 }));
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
+
+        startAutoRefresh();
+    }
+
+    private void startAutoRefresh() {
+        autoRefreshScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "bidder-auto-refresh");
+            t.setDaemon(true); // tự dừng khi ứng dụng đóng
+            return t;
+        });
+        autoRefreshScheduler.scheduleAtFixedRate(() -> {
+            try {
+                List<Auction> fresh = networkClient.sendGetAuctionsRequest();
+                if (fresh == null) return;
+                Platform.runLater(() -> updateAuctionListSmartly(fresh));
+            } catch (Exception e) {
+                System.err.println("[AutoRefresh-Bidder] Lỗi: " + e.getMessage());
+            }
+        }, 3, 3, TimeUnit.SECONDS);
+    }
+
+    // Cập nhật danh sách đấu giá mà không mất selection hiện tại
+    private void updateAuctionListSmartly(List<Auction> fresh) {
+        String selectedId = selectedAuction != null ? selectedAuction.getItem().getId() : null;
+
+        for (Auction a : auctionList) {
+            a.removeObserver(this);
+        }
+        auctionList.setAll(fresh);
+        for (Auction a : auctionList) {
+            a.addObserver(this);
+            rebuildChartDataFromHistory(a);
+        }
+
+        if (selectedId != null) {
+            auctionList.stream()
+                .filter(a -> a.getItem().getId().equals(selectedId))
+                .findFirst()
+                .ifPresent(a -> {
+                    selectedAuction = a;
+                    itemTable.getSelectionModel().select(a);
+                    updateDetailPanel(a);
+                    updateChartDisplay(a);
+                });
+        }
     }
 
     private void loadAuctions() {
@@ -222,8 +271,18 @@ public class BidderDashboardController implements AuctionObserver {
             double bid = Double.parseDouble(input);
             double current = selectedAuction.getItem().getCurrentHighestPrice();
 
-            if (bid <= current || selectedAuction.isClosed()) {
-                showAlert("Lỗi", "Giá phải lớn hơn giá hiện tại!", Alert.AlertType.WARNING);
+            if (selectedAuction.isClosed()
+                    || selectedAuction.getStatus()
+                       == AuctionSystem.model.auction.AuctionStatus.FINISHED) {
+                showAlert("Phiên đã kết thúc",
+                        "Phiên đấu giá này đã kết thúc, không thể đặt giá!",
+                        Alert.AlertType.WARNING);
+                return;
+            }
+            if (bid <= current) {
+                showAlert("Giá không hợp lệ",
+                        String.format("Giá đặt phải lớn hơn giá hiện tại: %,.0f VND!", current),
+                        Alert.AlertType.WARNING);
                 return;
             }
 
@@ -237,11 +296,13 @@ public class BidderDashboardController implements AuctionObserver {
                 txtBidPrice.clear();
                 handleRefresh();
             } else {
-                showAlert("Thất bại", "Đặt giá không thành công.", Alert.AlertType.ERROR);
+                showAlert("Thất bại", "Đặt giá không thành công (Server từ chối).", Alert.AlertType.ERROR);
             }
 
         } catch (NumberFormatException e) {
             showAlert("Lỗi", "Giá không hợp lệ!", Alert.AlertType.ERROR);
+        } catch (Exception e) {
+            showAlert("Lỗi đặt giá", e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -284,11 +345,13 @@ public class BidderDashboardController implements AuctionObserver {
                 showAlert("Thành công", "Đã bật Auto-Bid!", Alert.AlertType.INFORMATION);
                 handleRefresh();
             } else {
-                showAlert("Thất bại", "Không thể đăng ký Auto-Bid.", Alert.AlertType.ERROR);
+                showAlert("Thất bại", "Không thể đăng ký Auto-Bid (Server từ chối).", Alert.AlertType.ERROR);
             }
 
         } catch (NumberFormatException e) {
             showAlert("Lỗi", "Dữ liệu Auto-Bid không hợp lệ!", Alert.AlertType.ERROR);
+        } catch (Exception e) {
+            showAlert("Lỗi Auto-Bid", e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -358,8 +421,9 @@ public class BidderDashboardController implements AuctionObserver {
 
         if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             try {
-                if (countdownTimeline != null) {
-                    countdownTimeline.stop();
+                if (countdownTimeline != null) countdownTimeline.stop();
+                if (autoRefreshScheduler != null && !autoRefreshScheduler.isShutdown()) {
+                    autoRefreshScheduler.shutdownNow();
                 }
                 FXMLLoader loader =
                         new FXMLLoader(getClass().getResource("/hello-view.fxml"));

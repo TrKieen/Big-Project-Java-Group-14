@@ -134,15 +134,15 @@ public class SellerDashboardController {
             if (networkClient.sendAddItemRequest(dto)) {
                 itemList.add(newItem);
 
-                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Thêm sản phẩm: " + newItem.getName());
+                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Thêm sản phẩm thành công: " + newItem.getName());
                 clearForm();
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Lỗi", "Thêm sản phẩm không thành công (Server từ chối).");
             }
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Lỗi", e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Lỗi khi thêm sản phẩm", e.getMessage());
         }
     }
-
-
 
     @FXML
     public void handleUpdateItem(ActionEvent event) {
@@ -163,11 +163,13 @@ public class SellerDashboardController {
                 selectedItem.setStartTime(startDateTime);
                 selectedItem.setEndTime(endDateTime);
                 itemTable.refresh();
-                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật sản phẩm.");
+                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật sản phẩm thành công.");
                 clearForm();
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Lỗi", "Cập nhật sản phẩm không thành công (Server từ chối).");
             }
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Lỗi", e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Lỗi khi cập nhật sản phẩm", e.getMessage());
         }
     }
 
@@ -177,10 +179,16 @@ public class SellerDashboardController {
             showAlert(Alert.AlertType.WARNING, "Chú ý", "Vui lòng chọn sản phẩm để xóa.");
             return;
         }
-        if (networkClient.sendDeleteItemRequest(selectedItem.getId())) {
-            itemList.remove(selectedItem);
-            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã xóa sản phẩm.");
-            clearForm();
+        try {
+            if (networkClient.sendDeleteItemRequest(selectedItem.getId())) {
+                itemList.remove(selectedItem);
+                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã xóa sản phẩm thành công.");
+                clearForm();
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Lỗi", "Xóa sản phẩm không thành công (Server từ chối).");
+            }
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi khi xóa sản phẩm", e.getMessage());
         }
     }
 
@@ -218,6 +226,15 @@ public class SellerDashboardController {
 
         if (endDateTime.isBefore(startDateTime)) {
             showAlert(Alert.AlertType.WARNING, "Lỗi thời gian", "Thời gian kết thúc không được diễn ra trước thời gian bắt đầu.");
+            return false;
+        }
+
+        if (endDateTime.isBefore(LocalDateTime.now())) {
+            showAlert(Alert.AlertType.WARNING, "Lỗi thời gian",
+                    "Thời gian kết thúc đã qua rồi!\n"
+                    + "Ngày kết thúc bạn chọn: " + endDateTime + "\n"
+                    + "Hiện tại: " + LocalDateTime.now().withNano(0) + "\n\n"
+                    + "Vui lòng chọn thời gian kết thúc trong tương lai.");
             return false;
         }
         return true;

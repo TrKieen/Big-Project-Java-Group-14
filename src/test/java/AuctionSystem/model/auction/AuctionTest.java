@@ -64,4 +64,39 @@ public class AuctionTest {
             auction.placeBid(bidder1, 2000.0);
         });
     }
+
+    @Test
+    public void testMultipleBidders_HighestPriceShouldWin() {
+        auction.startAuction();
+        auction.placeBid(bidder1, 1200.0);
+        auction.placeBid(bidder2, 1800.0); // bidder2 đặt cao hơn
+        auction.placeBid(bidder1, 2000.0); // bidder1 đặt cao nhất
+
+        assertEquals(2000.0, auction.getItem().getCurrentHighestPrice());
+        assertEquals("user_A", auction.getLeadingBidder().getUsername());
+        assertEquals(3, auction.getBidHistory().size());
+    }
+
+    @Test
+    public void testUpdateStatus_WhenBeforeStart_ShouldBeOpen() {
+        // Item có startTime trong tương lai
+        Item futureItem = new Electronics("FUTURE_001", "Future Phone", "mô tả", 500.0,
+                LocalDateTime.now().plusHours(2),
+                LocalDateTime.now().plusHours(5), 6);
+        Auction futureAuction = new Auction(futureItem);
+
+        assertEquals(AuctionStatus.OPEN, futureAuction.getStatus());
+    }
+
+    @Test
+    public void testUpdateStatus_WhenAfterEnd_ShouldBeFinished() {
+        // Item có endTime trong quá khứ
+        Item pastItem = new Electronics("PAST_001", "Old Laptop", "cũ", 300.0,
+                LocalDateTime.now().minusHours(3),
+                LocalDateTime.now().minusHours(1), 0);
+        Auction pastAuction = new Auction(pastItem);
+
+        assertEquals(AuctionStatus.FINISHED, pastAuction.getStatus());
+        assertTrue(pastAuction.isClosed());
+    }
 }

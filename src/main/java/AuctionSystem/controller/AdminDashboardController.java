@@ -27,6 +27,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class AdminDashboardController implements AuctionObserver {
 
@@ -57,8 +60,8 @@ public class AdminDashboardController implements AuctionObserver {
     private final XYChart.Series<String, Number> priceSeries = new XYChart.Series<>();
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    // Đổi biến timeline thành biến toàn cục của class để hàm logout có thể tiếp cận và dừng nó lại
     private Timeline timeline;
+    private ScheduledExecutorService autoRefreshScheduler;
 
     @FXML
     public void initialize() {
@@ -105,6 +108,43 @@ public class AdminDashboardController implements AuctionObserver {
         );
         timeline.setCycleCount(Timeline.INDEFINITE); // Chạy vô hạn
         timeline.play(); // Kích hoạt bộ đếm thời gian
+
+        startAutoRefresh();
+    }
+
+    private void startAutoRefresh() {
+        autoRefreshScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "admin-auto-refresh");
+            t.setDaemon(true);
+            return t;
+        });
+        autoRefreshScheduler.scheduleAtFixedRate(() -> {
+            try {
+                List<Auction> fresh = networkClient.sendGetAuctionsRequest();
+                if (fresh == null) return;
+                Platform.runLater(() -> {
+                    String selectedId = selectedAuction != null
+                            ? selectedAuction.getItem().getId() : null;
+                    // Cập nhật auctionList giữ nguyên chọn lựa của Admin
+                    auctionList.setAll(fresh);
+                    // Re-register observer
+                    for (Auction a : auctionList) a.addObserver(this);
+                    auctionTable.refresh();
+                    // Restore selection
+                    if (selectedId != null) {
+                        auctionList.stream()
+                            .filter(a -> a.getItem().getId().equals(selectedId))
+                            .findFirst()
+                            .ifPresent(a -> {
+                                selectedAuction = a;
+                                auctionTable.getSelectionModel().select(a);
+                            });
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("[AutoRefresh-Admin] Lỗi: " + e.getMessage());
+            }
+        }, 3, 3, TimeUnit.SECONDS);
     }
 
     private void updateChartForSelectedAuction(Auction auction) {
@@ -184,9 +224,9 @@ public class AdminDashboardController implements AuctionObserver {
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
 
-            // 2. Bắt buộc phải dừng timeline chạy ngầm để tránh lỗi xung đột luồng giao diện JavaFX khi đổi Scene
-            if (timeline != null) {
-                timeline.stop();
+            if (timeline != null) timeline.stop();
+            if (autoRefreshScheduler != null && !autoRefreshScheduler.isShutdown()) {
+                autoRefreshScheduler.shutdownNow();
             }
 
             try {

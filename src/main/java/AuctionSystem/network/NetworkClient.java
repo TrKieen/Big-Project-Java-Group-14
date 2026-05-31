@@ -39,11 +39,15 @@ public class NetworkClient {
             Response response = (Response) ois.readObject();
 
             System.out.println("Phản hồi từ Server: " + response.getMessage());
-            return "SUCCESS".equals(response.getStatus());
+            if ("SUCCESS".equals(response.getStatus())) {
+                return true;
+            } else {
+                throw new RuntimeException(response.getMessage());
+            }
 
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Lỗi kết nối tới Server: " + e.getMessage());
-            return false;
+            throw new RuntimeException("Không thể kết nối đến Server đấu giá! Chi tiết: " + e.getMessage());
         }
     }
 
@@ -100,10 +104,14 @@ public class NetworkClient {
 
             Response response = (Response) ois.readObject();
             System.out.println("Phản hồi từ Server khi dừng phiên: " + response.getMessage());
-            return "SUCCESS".equals(response.getStatus());
+            if ("SUCCESS".equals(response.getStatus())) {
+                return true;
+            } else {
+                throw new RuntimeException(response.getMessage());
+            }
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Lỗi kết nối khi dừng phiên: " + e.getMessage());
-            return false;
+            throw new RuntimeException("Không thể kết nối đến Server để dừng phiên! Chi tiết: " + e.getMessage());
         }
     }
     // Thêm mới phương thức này vào cuối file NetworkClient.java để phục vụ tính năng Auto-Bid
@@ -120,10 +128,14 @@ public class NetworkClient {
 
             Response response = (Response) ois.readObject();
             System.out.println("Phản hồi từ Server khi đăng ký Auto-Bid: " + response.getMessage());
-            return "SUCCESS".equals(response.getStatus());
+            if ("SUCCESS".equals(response.getStatus())) {
+                return true;
+            } else {
+                throw new RuntimeException(response.getMessage());
+            }
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Lỗi kết nối đăng ký Auto-Bid: " + e.getMessage());
-            return false;
+            throw new RuntimeException("Không thể kết nối đến Server để đăng ký Auto-Bid! Chi tiết: " + e.getMessage());
         }
     }
     //Gửi chuỗi data đấu giá lên Server
@@ -140,10 +152,14 @@ public class NetworkClient {
 
             Response response = (Response) ois.readObject();
             System.out.println("Phản hồi từ Server khi đặt giá: " + response.getMessage());
-            return "SUCCESS".equals(response.getStatus());
+            if ("SUCCESS".equals(response.getStatus())) {
+                return true;
+            } else {
+                throw new RuntimeException(response.getMessage());
+            }
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Lỗi kết nối đặt giá: " + e.getMessage());
-            return false;
+            throw new RuntimeException("Không thể kết nối đến Server để đặt giá! Chi tiết: " + e.getMessage());
         }
     }
 }
